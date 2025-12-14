@@ -203,6 +203,7 @@ func (s *Server) renderRecentPostsHTML(e echo.Context) string {
 
 	postsByURI, err := s.fetchAppViewPosts(e.Request().Context(), postURIs)
 	if err != nil {
+		s.logger.Warn("failed to fetch appview post data", "error", err)
 		postsByURI = nil
 	}
 
@@ -373,7 +374,14 @@ func (s *Server) getFallbackProxyEndpoint(ctx context.Context) (string, error) {
 
 	for _, svc := range doc.Service {
 		if svc.Id == svcId {
-			return strings.TrimPrefix(svc.ServiceEndpoint, "https://"), nil
+			endpoint := strings.TrimSpace(svc.ServiceEndpoint)
+			if endpoint == "" {
+				return "", fmt.Errorf("fallback proxy service endpoint empty")
+			}
+			if !strings.HasPrefix(endpoint, "http://") && !strings.HasPrefix(endpoint, "https://") {
+				endpoint = "https://" + endpoint
+			}
+			return endpoint, nil
 		}
 	}
 
