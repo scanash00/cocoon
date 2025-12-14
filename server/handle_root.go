@@ -106,9 +106,15 @@ Version: %s
 func (s *Server) renderRecentPostsHTML(e echo.Context) string {
 	const limit = 10
 
-	var records []models.Record
+	type postRow struct {
+		models.Record
+		Handle string
+	}
+
+	var records []postRow
 	err := s.db.Raw(
-		"SELECT * FROM records WHERE nsid = ? ORDER BY created_at DESC LIMIT ?",
+		"SELECT records.*, COALESCE(actors.handle, '') AS handle FROM records LEFT JOIN actors ON actors.did = records.did WHERE records.nsid = ? ORDER BY records.created_at DESC LIMIT ?",
+		nil,
 		"app.bsky.feed.post",
 		limit,
 	).Scan(&records).Error
@@ -120,6 +126,12 @@ func (s *Server) renderRecentPostsHTML(e echo.Context) string {
 		return `<div class="subtle">(no posts yet)</div>`
 	}
 
+	postURIs := make([]string, 0, len(records))
+	for _, r := range records {
+		postURIs = append(postURIs, "at://"+r.Did+"/"+r.Nsid+"/"+r.Rkey)
+	}
+	likeCounts := s.countLikeCountsForPostURIs(e, postURIs)
+
 	var b strings.Builder
 	for _, r := range records {
 		val, err := atdata.UnmarshalCBOR(r.Value)
@@ -127,21 +139,24 @@ func (s *Server) renderRecentPostsHTML(e echo.Context) string {
 			continue
 		}
 
-		m, ok := val.(map[string]any)
-		if !ok {
-			continue
-		}
-
-		text, _ := m["text"].(string)
-		createdAt, _ := m["createdAt"].(string)
+		text, _ := val["text"].(string)
+		createdAt, _ := val["createdAt"].(string)
+		postURI := "at://" + r.Did + "/" + r.Nsid + "/" + r.Rkey
+		likes := likeCounts[postURI]
 
 		b.WriteString(`<div class="post">`)
 		b.WriteString(`<div class="post-meta">`)
-		b.WriteString(html.EscapeString(r.Did))
+		if r.Handle != "" {
+			b.WriteString(html.EscapeString(r.Handle))
+		} else {
+			b.WriteString(html.EscapeString(r.Did))
+		}
 		if createdAt != "" {
 			b.WriteString(` &middot; `)
 			b.WriteString(html.EscapeString(createdAt))
 		}
+		b.WriteString(` &middot; `)
+		b.WriteString(fmt.Sprintf("%d likes", likes))
 		b.WriteString(`</div>`)
 		b.WriteString(`<div>`)
 		if text == "" {
@@ -158,4 +173,47 @@ func (s *Server) renderRecentPostsHTML(e echo.Context) string {
 	}
 
 	return b.String()
+}
+
+func (s *Server) countLikeCountsForPostURIs(e echo.Context, postURIs []string) map[string]int {
+	counts := make(map[string]int, len(postURIs))
+	if len(postURIs) == 0 {
+		return counts
+	}
+
+	set := make(map[string]struct{}, len(postURIs))
+	for _, uri := range postURIs {
+		set[uri] = struct{}{}
+	}
+
+	var likes []models.Record
+	if err := s.db.Raw(
+		"SELECT * FROM records WHERE nsid = ? ORDER BY created_at DESC LIMIT ?",
+		nil,
+		"app.bsky.feed.like",
+		5000,
+	).Scan(&likes).Error; err != nil {
+		return counts
+	}
+
+	for _, r := range likes {
+		val, err := atdata.UnmarshalCBOR(r.Value)
+		if err != nil {
+			continue
+		}
+		subject, ok := val["subject"].(map[string]any)
+		if !ok {
+			continue
+		}
+		subURI, _ := subject["uri"].(string)
+		if subURI == "" {
+			continue
+		}
+		if _, ok := set[subURI]; !ok {
+			continue
+		}
+		counts[subURI]++
+	}
+
+	return counts
 }
