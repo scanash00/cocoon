@@ -1,10 +1,14 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"html"
+	"net/url"
 	"github.com/labstack/echo/v4"
 	"github.com/bluesky-social/indigo/atproto/atdata"
+	"github.com/bluesky-social/indigo/api/bsky"
+	"github.com/bluesky-social/indigo/xrpc"
 	"github.com/haileyok/cocoon/models"
 	"strings"
 )
@@ -76,30 +80,78 @@ Version: %s
 			padding: 12px 14px;
 			border: 1px solid light-dark(#e5e7eb, #2a2d31);
 			border-radius: 10px;
+			text-decoration: none;
+			display: block;
+		}
+
+		.post:hover {
+			border-color: light-dark(#c7ccd3, #3a3f45);
 		}
 
 		.post-meta {
 			opacity: 0.8;
 			font-size: 0.9em;
 			margin-bottom: 6px;
+			display: flex;
+			align-items: center;
+			gap: 10px;
+		}
+
+		.pfp {
+			width: 22px;
+			height: 22px;
+			border-radius: 999px;
+			background: light-dark(#e5e7eb, #2a2d31);
+			flex: 0 0 22px;
+			object-fit: cover;
+		}
+
+		.username a { text-decoration: none; }
+		.username a:hover { text-decoration: underline; }
+
+		.post-text {
+			margin: 8px 0;
+			white-space: pre-wrap;
+			word-wrap: break-word;
 		}
 
 		.post-actions {
 			margin-top: 10px;
-			opacity: 0.85;
+			opacity: 0.7;
+			font-size: 0.9em;
 		}
 
-		.likes {
+		.counts {
+			display: flex;
+			gap: 16px;
+			align-items: center;
+		}
+
+		.count {
 			display: inline-flex;
 			align-items: center;
-			gap: 6px;
+			gap: 5px;
 		}
 
-		.likes svg {
-			width: 14px;
-			height: 14px;
-			flex: 0 0 14px;
+		.icon {
+			width: 16px;
+			height: 16px;
 			fill: currentColor;
+			opacity: 0.7;
+		}
+
+		.replying {
+			opacity: 0.7;
+			font-size: 0.9em;
+			margin-bottom: 6px;
+		}
+
+		.replying a {
+			text-decoration: none;
+		}
+
+		.replying a:hover {
+			text-decoration: underline;
 		}
 	</style>
 	<title>cocoon.scanash.com</title>
@@ -148,7 +200,11 @@ func (s *Server) renderRecentPostsHTML(e echo.Context) string {
 	for _, r := range records {
 		postURIs = append(postURIs, "at://"+r.Did+"/"+r.Nsid+"/"+r.Rkey)
 	}
-	likeCounts := s.countLikeCountsForPostURIs(e, postURIs)
+
+	postsByURI, err := s.fetchAppViewPosts(e.Request().Context(), postURIs)
+	if err != nil {
+		postsByURI = nil
+	}
 
 	var b strings.Builder
 	for _, r := range records {
@@ -158,23 +214,56 @@ func (s *Server) renderRecentPostsHTML(e echo.Context) string {
 		}
 
 		text, _ := val["text"].(string)
-		createdAt, _ := val["createdAt"].(string)
 		postURI := "at://" + r.Did + "/" + r.Nsid + "/" + r.Rkey
-		likes := likeCounts[postURI]
 
-		b.WriteString(`<div class="post">`)
+		authorHandle := r.Handle
+		authorAvatar := ""
+		replyCount := int64(0)
+		repostCount := int64(0)
+		likeCount := int64(0)
+		postLink := ""
+		replyingTo := ""
+
+		if postsByURI != nil {
+			if v, ok := postsByURI[postURI]; ok && v.Post != nil {
+				authorHandle = v.Post.Author.Handle
+				authorAvatar = toStringAny(any(v.Post.Author.Avatar))
+				replyCount = toInt64Any(any(v.Post.ReplyCount))
+				repostCount = toInt64Any(any(v.Post.RepostCount))
+				likeCount = toInt64Any(any(v.Post.LikeCount))
+
+				if v.Post.Uri != "" {
+					postLink = toBskyPostLink(v.Post.Author.Handle, v.Post.Uri)
+				}
+				if v.ReplyingToHandle != "" {
+					replyingTo = v.ReplyingToHandle
+				}
+			}
+		}
+
+		if postLink == "" {
+			postLink = toBskyPostLink(authorHandle, postURI)
+		}
+
+		b.WriteString(`<div class="post" onclick="window.location.href='` + html.EscapeString(postLink) + `'" style="cursor:pointer">`)
+		if replyingTo != "" {
+			b.WriteString(`<div class="replying">Replying to <a href="` + html.EscapeString(toBskyProfileLink(replyingTo)) + `" onclick="event.stopPropagation()">@` + html.EscapeString(replyingTo) + `</a></div>`)
+		}
 		b.WriteString(`<div class="post-meta">`)
-		if r.Handle != "" {
-			b.WriteString(html.EscapeString(r.Handle))
+		if authorAvatar != "" {
+			b.WriteString(`<img class="pfp" src="` + html.EscapeString(authorAvatar) + `" alt="" />`)
+		} else {
+			b.WriteString(`<div class="pfp"></div>`)
+		}
+		b.WriteString(`<span class="username">`)
+		if authorHandle != "" {
+			b.WriteString(`<a href="` + html.EscapeString(toBskyProfileLink(authorHandle)) + `" onclick="event.stopPropagation()">@` + html.EscapeString(authorHandle) + `</a>`)
 		} else {
 			b.WriteString(html.EscapeString(r.Did))
 		}
-		if createdAt != "" {
-			b.WriteString(` &middot; `)
-			b.WriteString(html.EscapeString(createdAt))
-		}
+		b.WriteString(`</span>`)
 		b.WriteString(`</div>`)
-		b.WriteString(`<div>`)
+		b.WriteString(`<div class="post-text">`)
 		if text == "" {
 			b.WriteString(`<span class="subtle">(no text)</span>`)
 		} else {
@@ -182,10 +271,11 @@ func (s *Server) renderRecentPostsHTML(e echo.Context) string {
 		}
 		b.WriteString(`</div>`)
 		b.WriteString(`<div class="post-actions">`)
-		b.WriteString(`<span class="likes" title="Likes">`)
-		b.WriteString(`<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>`)
-		b.WriteString(fmt.Sprintf("%d", likes))
-		b.WriteString(`</span>`)
+		b.WriteString(`<div class="counts">`)
+		b.WriteString(fmt.Sprintf(`<span class="count"><svg class="icon" viewBox="0 0 24 24"><path d="M21 6h-2v9H6v2c0 .55.45 1 1 1h11l4 4V7c0-.55-.45-1-1-1zm-4 6V3c0-.55-.45-1-1-1H3c-.55 0-1 .45-1 1v14l4-4h10c.55 0 1-.45 1-1z"/></svg>%d</span>`, replyCount))
+		b.WriteString(fmt.Sprintf(`<span class="count"><svg class="icon" viewBox="0 0 24 24"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg>%d</span>`, repostCount))
+		b.WriteString(fmt.Sprintf(`<span class="count"><svg class="icon" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>%d</span>`, likeCount))
+		b.WriteString(`</div>`)
 		b.WriteString(`</div>`)
 		b.WriteString(`</div>`)
 	}
@@ -197,45 +287,149 @@ func (s *Server) renderRecentPostsHTML(e echo.Context) string {
 	return b.String()
 }
 
-func (s *Server) countLikeCountsForPostURIs(e echo.Context, postURIs []string) map[string]int {
-	counts := make(map[string]int, len(postURIs))
-	if len(postURIs) == 0 {
-		return counts
+
+type appViewPost struct {
+	Post             *bsky.FeedDefs_PostView
+	ReplyingToHandle string
+}
+
+func (s *Server) fetchAppViewPosts(ctx context.Context, postURIs []string) (map[string]appViewPost, error) {
+	if s.config.FallbackProxy == "" {
+		return nil, fmt.Errorf("no fallback proxy configured")
 	}
 
-	set := make(map[string]struct{}, len(postURIs))
-	for _, uri := range postURIs {
-		set[uri] = struct{}{}
+	endpoint, err := s.getFallbackProxyEndpoint(ctx)
+	if err != nil {
+		return nil, err
 	}
 
-	var likes []models.Record
-	if err := s.db.Raw(
-		"SELECT * FROM records WHERE nsid = ? ORDER BY created_at DESC LIMIT ?",
-		nil,
-		"app.bsky.feed.like",
-		5000,
-	).Scan(&likes).Error; err != nil {
-		return counts
+	cli := xrpc.Client{Host: endpoint}
+	resp, err := bsky.FeedGetPosts(ctx, &cli, postURIs)
+	if err != nil {
+		return nil, err
 	}
 
-	for _, r := range likes {
-		val, err := atdata.UnmarshalCBOR(r.Value)
-		if err != nil {
-			continue
-		}
-		subject, ok := val["subject"].(map[string]any)
-		if !ok {
-			continue
-		}
-		subURI, _ := subject["uri"].(string)
-		if subURI == "" {
-			continue
-		}
-		if _, ok := set[subURI]; !ok {
-			continue
-		}
-		counts[subURI]++
+	posts := make(map[string]appViewPost, len(resp.Posts))
+	for _, p := range resp.Posts {
+		posts[p.Uri] = appViewPost{Post: p}
 	}
 
-	return counts
+	parentURIs := make([]string, 0)
+	for _, p := range resp.Posts {
+		if p.Record == nil {
+			continue
+		}
+		post, ok := p.Record.Val.(*bsky.FeedPost)
+		if !ok || post == nil || post.Reply == nil || post.Reply.Parent == nil {
+			continue
+		}
+		if post.Reply.Parent.Uri != "" {
+			parentURIs = append(parentURIs, post.Reply.Parent.Uri)
+		}
+	}
+
+	if len(parentURIs) > 0 {
+		parentsResp, err := bsky.FeedGetPosts(ctx, &cli, parentURIs)
+		if err == nil {
+			parentByURI := make(map[string]*bsky.FeedDefs_PostView, len(parentsResp.Posts))
+			for _, p := range parentsResp.Posts {
+				parentByURI[p.Uri] = p
+			}
+			for uri, entry := range posts {
+				if entry.Post == nil || entry.Post.Record == nil {
+					continue
+				}
+				post, ok := entry.Post.Record.Val.(*bsky.FeedPost)
+				if !ok || post == nil || post.Reply == nil || post.Reply.Parent == nil {
+					continue
+				}
+				puri := post.Reply.Parent.Uri
+				if puri == "" {
+					continue
+				}
+				if pv := parentByURI[puri]; pv != nil {
+					entry.ReplyingToHandle = pv.Author.Handle
+					posts[uri] = entry
+				}
+			}
+		}
+	}
+
+	return posts, nil
+}
+
+func (s *Server) getFallbackProxyEndpoint(ctx context.Context) (string, error) {
+	pts := strings.Split(s.config.FallbackProxy, "#")
+	if len(pts) != 2 {
+		return "", fmt.Errorf("invalid fallback proxy")
+	}
+	svcDid := pts[0]
+	svcId := "#" + pts[1]
+
+	doc, err := s.passport.FetchDoc(ctx, svcDid)
+	if err != nil {
+		return "", err
+	}
+
+	for _, svc := range doc.Service {
+		if svc.Id == svcId {
+			return strings.TrimPrefix(svc.ServiceEndpoint, "https://"), nil
+		}
+	}
+
+	return "", fmt.Errorf("fallback proxy service not found")
+}
+
+func toInt64Any(v any) int64 {
+	switch t := v.(type) {
+	case nil:
+		return 0
+	case int:
+		return int64(t)
+	case int64:
+		return t
+	case *int64:
+		if t == nil {
+			return 0
+		}
+		return *t
+	case uint64:
+		return int64(t)
+	case *uint64:
+		if t == nil {
+			return 0
+		}
+		return int64(*t)
+	default:
+		return 0
+	}
+}
+
+func toStringAny(v any) string {
+	switch t := v.(type) {
+	case nil:
+		return ""
+	case string:
+		return t
+	case *string:
+		if t == nil {
+			return ""
+		}
+		return *t
+	default:
+		return ""
+	}
+}
+
+func toBskyProfileLink(handle string) string {
+	return "https://bsky.app/profile/" + url.PathEscape(handle)
+}
+
+func toBskyPostLink(handle string, atURI string) string {
+	parts := strings.Split(atURI, "/")
+	if len(parts) < 5 {
+		return "https://bsky.app/profile/" + url.PathEscape(handle)
+	}
+	rkey := parts[len(parts)-1]
+	return "https://bsky.app/profile/" + url.PathEscape(handle) + "/post/" + url.PathEscape(rkey)
 }
