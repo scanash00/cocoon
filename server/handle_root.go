@@ -1,9 +1,12 @@
 package server
 
-import "github.com/labstack/echo/v4"
+import (
+	"fmt"
+	"github.com/labstack/echo/v4"
+)
 
 func (s *Server) handleRoot(e echo.Context) error {
-	return e.String(200, `
+	return e.String(200, fmt.Sprintf(`
 
     _\/_
      /\
@@ -13,7 +16,7 @@ func (s *Server) handleRoot(e echo.Context) error {
    /o   \
   /~~*~~~\
  o/    o \
- /~~~~~~~~\~`
+ /~~~~~~~~\~
 /__*_______\
      ||
    \====/
@@ -28,5 +31,6 @@ Donate: https://ko-fi.com/scan
 Follow Scan: https://bsky.app/profile/scanash.com
 Code: https://github.com/scanash00/cocoon
 
-Version: `+s.config.Version+"\n")
+Version: %s
+`, s.config.Version))
 }
