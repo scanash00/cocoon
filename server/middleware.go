@@ -193,6 +193,17 @@ func (s *Server) handleLegacySessionMiddleware(next echo.HandlerFunc) echo.Handl
 			did = repo.Repo.Did
 		}
 
+		if status := repo.Status(); status != nil {
+			switch *status {
+			case "takendown":
+				return helpers.InputError(e, to.StringPtr("AccountTakedown"))
+			case "deactivated":
+				if e.Request().URL.Path != "/xrpc/com.atproto.server.activateAccount" {
+					return helpers.InputError(e, to.StringPtr("RepoDeactivated"))
+				}
+			}
+		}
+
 		e.Set("repo", repo)
 		e.Set("did", did)
 		e.Set("token", tokenstr)
@@ -270,6 +281,17 @@ func (s *Server) handleOauthSessionMiddleware(next echo.HandlerFunc) echo.Handle
 		if err != nil {
 			s.logger.Error("could not find actor in db", "error", err)
 			return helpers.ServerError(e, nil)
+		}
+
+		if status := repo.Status(); status != nil {
+			switch *status {
+			case "takendown":
+				return helpers.InputError(e, to.StringPtr("AccountTakedown"))
+			case "deactivated":
+				if e.Request().URL.Path != "/xrpc/com.atproto.server.activateAccount" {
+					return helpers.InputError(e, to.StringPtr("RepoDeactivated"))
+				}
+			}
 		}
 
 		e.Set("repo", repo)

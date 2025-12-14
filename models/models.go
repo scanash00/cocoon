@@ -28,6 +28,7 @@ type Repo struct {
 	Rev                            string
 	Root                           []byte
 	Preferences                    []byte
+	Takendown                      bool
 	Deactivated                    bool
 }
 
@@ -49,6 +50,9 @@ func (r *Repo) Status() *string {
 	var status *string
 	if r.Deactivated {
 		status = to.StringPtr("deactivated")
+	}
+	if r.Takendown {
+		status = to.StringPtr("takendown")
 	}
 	return status
 }

@@ -109,6 +109,14 @@ func (s *Server) handleAccountSigninPost(e echo.Context) error {
 		return e.Redirect(303, "/account/signin")
 	}
 
+	if status := repo.Status(); status != nil {
+		if *status == "takendown" {
+			sess.AddFlash("Account has been taken down", "error")
+			sess.Save(e.Request(), e.Response())
+			return e.Redirect(303, "/account/signin")
+		}
+	}
+
 	sess.Options = &sessions.Options{
 		Path:     "/",
 		MaxAge:   int(AccountSessionMaxAge.Seconds()),

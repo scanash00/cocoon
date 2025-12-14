@@ -23,6 +23,18 @@ func (s *Server) handleSyncGetRecord(e echo.Context) error {
 		return helpers.ServerError(e, nil)
 	}
 
+	status := urepo.Status()
+	if status != nil {
+		switch *status {
+		case "takendown":
+			msg := "RepoTakendown"
+			return helpers.InputError(e, &msg)
+		case "deactivated":
+			msg := "RepoDeactivated"
+			return helpers.InputError(e, &msg)
+		}
+	}
+
 	root, blocks, err := s.repoman.getRecordProof(urepo, collection, rkey)
 	if err != nil {
 		return err

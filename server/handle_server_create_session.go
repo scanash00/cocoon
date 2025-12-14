@@ -88,6 +88,12 @@ func (s *Server) handleCreateSession(e echo.Context) error {
 		return helpers.InputError(e, to.StringPtr("InvalidRequest"))
 	}
 
+	if status := repo.Status(); status != nil {
+		if *status == "takendown" {
+			return helpers.InputError(e, to.StringPtr("AccountTakedown"))
+		}
+	}
+
 	sess, err := s.createSession(&repo.Repo)
 	if err != nil {
 		s.logger.Error("error creating session", "error", err)

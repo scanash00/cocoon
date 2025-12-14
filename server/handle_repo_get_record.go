@@ -1,8 +1,10 @@
 package server
 
 import (
+	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/bluesky-social/indigo/atproto/atdata"
 	"github.com/bluesky-social/indigo/atproto/syntax"
+	"github.com/haileyok/cocoon/internal/helpers"
 	"github.com/haileyok/cocoon/models"
 	"github.com/labstack/echo/v4"
 )
@@ -19,7 +21,28 @@ func (s *Server) handleRepoGetRecord(e echo.Context) error {
 	rkey := e.QueryParam("rkey")
 	cidstr := e.QueryParam("cid")
 
-	params := []any{repo, collection, rkey}
+	did := repo
+	if _, err := syntax.ParseDID(did); err != nil {
+		actor, err := s.getActorByHandle(repo)
+		if err == nil {
+			did = actor.Did
+		}
+	}
+
+	urepo, err := s.getRepoActorByDid(did)
+	if err == nil {
+		status := urepo.Status()
+		if status != nil {
+			switch *status {
+			case "takendown":
+				return helpers.InputError(e, to.StringPtr("RepoTakendown"))
+			case "deactivated":
+				return helpers.InputError(e, to.StringPtr("RepoDeactivated"))
+			}
+		}
+	}
+
+	params := []any{did, collection, rkey}
 	cidquery := ""
 
 	if cidstr != "" {

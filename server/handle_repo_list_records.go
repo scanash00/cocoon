@@ -85,6 +85,19 @@ func (s *Server) handleListRecords(e echo.Context) error {
 		did = actor.Did
 	}
 
+	urepo, err := s.getRepoActorByDid(did)
+	if err == nil {
+		status := urepo.Status()
+		if status != nil {
+			switch *status {
+			case "takendown":
+				return helpers.InputError(e, to.StringPtr("RepoTakendown"))
+			case "deactivated":
+				return helpers.InputError(e, to.StringPtr("RepoDeactivated"))
+			}
+		}
+	}
+
 	params := []any{did, req.Collection}
 	if req.Cursor != "" {
 		params = append(params, req.Cursor)

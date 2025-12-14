@@ -22,6 +22,18 @@ func (s *Server) handleSyncGetLatestCommit(e echo.Context) error {
 		return err
 	}
 
+	status := urepo.Status()
+	if status != nil {
+		switch *status {
+		case "takendown":
+			msg := "RepoTakendown"
+			return helpers.InputError(e, &msg)
+		case "deactivated":
+			msg := "RepoDeactivated"
+			return helpers.InputError(e, &msg)
+		}
+	}
+
 	c, err := cid.Cast(urepo.Root)
 	if err != nil {
 		return err
