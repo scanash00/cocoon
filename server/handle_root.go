@@ -83,6 +83,24 @@ Version: %s
 			font-size: 0.9em;
 			margin-bottom: 6px;
 		}
+
+		.post-actions {
+			margin-top: 10px;
+			opacity: 0.85;
+		}
+
+		.likes {
+			display: inline-flex;
+			align-items: center;
+			gap: 6px;
+		}
+
+		.likes svg {
+			width: 14px;
+			height: 14px;
+			flex: 0 0 14px;
+			fill: currentColor;
+		}
 	</style>
 	<title>cocoon.scanash.com</title>
 </head>
@@ -155,8 +173,6 @@ func (s *Server) renderRecentPostsHTML(e echo.Context) string {
 			b.WriteString(` &middot; `)
 			b.WriteString(html.EscapeString(createdAt))
 		}
-		b.WriteString(` &middot; `)
-		b.WriteString(fmt.Sprintf("%d likes", likes))
 		b.WriteString(`</div>`)
 		b.WriteString(`<div>`)
 		if text == "" {
@@ -164,6 +180,12 @@ func (s *Server) renderRecentPostsHTML(e echo.Context) string {
 		} else {
 			b.WriteString(html.EscapeString(text))
 		}
+		b.WriteString(`</div>`)
+		b.WriteString(`<div class="post-actions">`)
+		b.WriteString(`<span class="likes" title="Likes">`)
+		b.WriteString(`<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>`)
+		b.WriteString(fmt.Sprintf("%d", likes))
+		b.WriteString(`</span>`)
 		b.WriteString(`</div>`)
 		b.WriteString(`</div>`)
 	}
