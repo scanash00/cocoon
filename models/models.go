@@ -29,6 +29,8 @@ type Repo struct {
 	Root                           []byte
 	Preferences                    []byte
 	Takendown                      bool
+	TakedownComment                *string `gorm:"column:takedown_reason"`
+	TakedownExpiresAt              *time.Time `gorm:"column:takedown_expires_at"`
 	Deactivated                    bool
 }
 

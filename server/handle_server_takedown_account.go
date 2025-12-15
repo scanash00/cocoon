@@ -13,6 +13,11 @@ import (
 
 type ComAtprotoServerTakedownAccountRequest struct {
 	Did string `json:"did" validate:"required,atproto-did"`
+
+	Comment         *string  `json:"comment,omitempty"`
+	DurationInHours *int     `json:"durationInHours,omitempty"`
+	Policies        []string `json:"policies,omitempty"`
+	SeverityLevel   *string  `json:"severityLevel,omitempty"`
 }
 
 func (s *Server) handleServerTakedownAccount(e echo.Context) error {
@@ -27,7 +32,13 @@ func (s *Server) handleServerTakedownAccount(e echo.Context) error {
 		return helpers.InputError(e, nil)
 	}
 
-	if err := s.db.Exec("UPDATE repos SET takendown = ? WHERE did = ?", nil, true, req.Did).Error; err != nil {
+	var expiresAt *time.Time
+	if req.DurationInHours != nil {
+		t := time.Now().Add(time.Duration(*req.DurationInHours) * time.Hour).UTC()
+		expiresAt = &t
+	}
+
+	if err := s.db.Exec("UPDATE repos SET takendown = ?, takedown_reason = ?, takedown_expires_at = ? WHERE did = ?", nil, true, req.Comment, expiresAt, req.Did).Error; err != nil {
 		s.logger.Error("error updating account status to takendown", "error", err)
 		return helpers.ServerError(e, nil)
 	}
@@ -49,6 +60,11 @@ func (s *Server) handleServerTakedownAccount(e echo.Context) error {
 	repo, err := s.getRepoActorByDid(req.Did)
 	if err != nil {
 		s.logger.Error("error fetching repo", "error", err)
+		return helpers.ServerError(e, nil)
+	}
+
+	if err := s.sendTakedownNotice(repo.Email, repo.Handle, req.Comment, expiresAt); err != nil {
+		s.logger.Error("error sending takedown notice email", "error", err)
 		return helpers.ServerError(e, nil)
 	}
 
@@ -81,7 +97,7 @@ func (s *Server) handleServerUntakedownAccount(e echo.Context) error {
 		return helpers.InputError(e, nil)
 	}
 
-	if err := s.db.Exec("UPDATE repos SET takendown = ? WHERE did = ?", nil, false, req.Did).Error; err != nil {
+	if err := s.db.Exec("UPDATE repos SET takendown = ?, takedown_reason = ?, takedown_expires_at = ? WHERE did = ?", nil, false, nil, nil, req.Did).Error; err != nil {
 		s.logger.Error("error updating account status to untakedown", "error", err)
 		return helpers.ServerError(e, nil)
 	}
