@@ -200,6 +200,7 @@ func (s *Server) handleLegacySessionMiddleware(next echo.HandlerFunc) echo.Handl
 					"/xrpc/com.atproto.server.getSession":     true,
 					"/xrpc/com.atproto.server.refreshSession": true,
 					"/xrpc/com.atproto.server.deleteSession":  true,
+					"/xrpc/com.atproto.moderation.createReport": true,
 				}
 
 				if scope != "com.atproto.takendown" && !(isRefresh && scope == "com.atproto.refresh") {
