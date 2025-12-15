@@ -145,7 +145,7 @@ func (s *Server) handleLegacySessionMiddleware(next echo.HandlerFunc) echo.Handl
 
 		if isRefresh && scope != "com.atproto.refresh" {
 			return helpers.InvalidTokenError(e)
-		} else if !hasLxm && !isRefresh && scope != "com.atproto.access" {
+		} else if !hasLxm && !isRefresh && scope != "com.atproto.access" && scope != "com.atproto.takendown" {
 			return helpers.InvalidTokenError(e)
 		}
 
@@ -196,7 +196,18 @@ func (s *Server) handleLegacySessionMiddleware(next echo.HandlerFunc) echo.Handl
 		if status := repo.Status(); status != nil {
 			switch *status {
 			case "takendown":
-				return helpers.AuthRequiredError(e, "AccountTakedown", "Account has been taken down")
+				allowed := map[string]bool{
+					"/xrpc/com.atproto.server.getSession":     true,
+					"/xrpc/com.atproto.server.refreshSession": true,
+					"/xrpc/com.atproto.server.deleteSession":  true,
+				}
+
+				if scope != "com.atproto.takendown" && !(isRefresh && scope == "com.atproto.refresh") {
+					return helpers.AuthRequiredError(e, "AccountTakedown", "Account has been taken down")
+				}
+				if !allowed[e.Request().URL.Path] {
+					return helpers.AuthRequiredError(e, "AccountTakedown", "Account has been taken down")
+				}
 			case "deactivated":
 				if e.Request().URL.Path != "/xrpc/com.atproto.server.activateAccount" {
 					return helpers.InputError(e, to.StringPtr("RepoDeactivated"))

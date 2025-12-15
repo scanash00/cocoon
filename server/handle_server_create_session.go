@@ -17,6 +17,7 @@ type ComAtprotoServerCreateSessionRequest struct {
 	Identifier      string  `json:"identifier" validate:"required"`
 	Password        string  `json:"password" validate:"required"`
 	AuthFactorToken *string `json:"authFactorToken,omitempty"`
+	AllowTakendown  *bool   `json:"allowTakendown,omitempty"`
 }
 
 type ComAtprotoServerCreateSessionResponse struct {
@@ -90,6 +91,26 @@ func (s *Server) handleCreateSession(e echo.Context) error {
 
 	if status := repo.Status(); status != nil {
 		if *status == "takendown" {
+			if req.AllowTakendown != nil && *req.AllowTakendown {
+				sess, err := s.createTakedownSession(&repo.Repo)
+				if err != nil {
+					s.logger.Error("error creating session", "error", err)
+					return helpers.ServerError(e, nil)
+				}
+
+				return e.JSON(200, ComAtprotoServerCreateSessionResponse{
+					AccessJwt:       sess.AccessToken,
+					RefreshJwt:      sess.RefreshToken,
+					Handle:          repo.Handle,
+					Did:             repo.Repo.Did,
+					Email:           repo.Email,
+					EmailConfirmed:  repo.EmailConfirmedAt != nil,
+					EmailAuthFactor: false,
+					Active:          repo.Active(),
+					Status:          repo.Status(),
+				})
+			}
+
 			return helpers.AuthRequiredError(e, "AccountTakedown", "Account has been taken down")
 		}
 	}

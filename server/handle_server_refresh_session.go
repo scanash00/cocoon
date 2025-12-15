@@ -29,7 +29,17 @@ func (s *Server) handleRefreshSession(e echo.Context) error {
 		return helpers.ServerError(e, nil)
 	}
 
-	sess, err := s.createSession(&repo.Repo)
+	var sess *Session
+	var err error
+	if status := repo.Status(); status != nil {
+		if *status == "takendown" {
+			sess, err = s.createTakedownSession(&repo.Repo)
+		} else {
+			sess, err = s.createSession(&repo.Repo)
+		}
+	} else {
+		sess, err = s.createSession(&repo.Repo)
+	}
 	if err != nil {
 		s.logger.Error("error creating new session for refresh", "error", err)
 		return helpers.ServerError(e, nil)
