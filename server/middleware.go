@@ -196,7 +196,7 @@ func (s *Server) handleLegacySessionMiddleware(next echo.HandlerFunc) echo.Handl
 		if status := repo.Status(); status != nil {
 			switch *status {
 			case "takendown":
-				return helpers.InputError(e, to.StringPtr("AccountTakedown"))
+				return helpers.AuthRequiredError(e, "AccountTakedown", "Account has been taken down")
 			case "deactivated":
 				if e.Request().URL.Path != "/xrpc/com.atproto.server.activateAccount" {
 					return helpers.InputError(e, to.StringPtr("RepoDeactivated"))
@@ -286,7 +286,7 @@ func (s *Server) handleOauthSessionMiddleware(next echo.HandlerFunc) echo.Handle
 		if status := repo.Status(); status != nil {
 			switch *status {
 			case "takendown":
-				return helpers.InputError(e, to.StringPtr("AccountTakedown"))
+				return helpers.AuthRequiredError(e, "AccountTakedown", "Account has been taken down")
 			case "deactivated":
 				if e.Request().URL.Path != "/xrpc/com.atproto.server.activateAccount" {
 					return helpers.InputError(e, to.StringPtr("RepoDeactivated"))

@@ -90,7 +90,7 @@ func (s *Server) handleCreateSession(e echo.Context) error {
 
 	if status := repo.Status(); status != nil {
 		if *status == "takendown" {
-			return helpers.InputError(e, to.StringPtr("AccountTakedown"))
+			return helpers.AuthRequiredError(e, "AccountTakedown", "Account has been taken down")
 		}
 	}
 
