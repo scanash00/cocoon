@@ -15,6 +15,7 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/bluesky-social/indigo/api/atproto"
 	"github.com/bluesky-social/indigo/atproto/atdata"
+	"github.com/bluesky-social/indigo/atproto/lexicon"
 	"github.com/bluesky-social/indigo/atproto/syntax"
 	"github.com/bluesky-social/indigo/carstore"
 	"github.com/bluesky-social/indigo/events"
@@ -45,6 +46,21 @@ func NewRepoMan(s *Server) *RepoMan {
 		db:    s.db,
 		clock: &clock,
 	}
+}
+
+func (rm *RepoMan) validateRecord(recordData map[string]any, nsid string) string {
+	if rm.s.lexiconCatalog == nil {
+		return "unknown"
+	}
+
+	err := lexicon.ValidateRecord(rm.s.lexiconCatalog, recordData, nsid, 0)
+	if err != nil {
+		if _, resolveErr := rm.s.lexiconCatalog.Resolve(nsid); resolveErr != nil {
+			return "unknown"
+		}
+		return "invalid"
+	}
+	return "valid"
 }
 
 type OpType string
@@ -181,7 +197,7 @@ func (rm *RepoMan) applyWrites(ctx context.Context, urepo models.Repo, writes []
 				Type:             to.StringPtr(OpTypeCreate.String()),
 				Uri:              to.StringPtr("at://" + urepo.Did + "/" + op.Collection + "/" + *op.Rkey),
 				Cid:              to.StringPtr(nc.String()),
-				ValidationStatus: to.StringPtr("valid"), // TODO: obviously this might not be true atm lol
+				ValidationStatus: to.StringPtr(rm.validateRecord(mm, op.Collection)),
 			})
 		case OpTypeDelete:
 			// try to find the old record in the database
@@ -190,9 +206,8 @@ func (rm *RepoMan) applyWrites(ctx context.Context, urepo models.Repo, writes []
 				return nil, err
 			}
 
-			// TODO: this is really confusing, and looking at it i have no idea why i did this. below when we are doing deletes, we
-			// check if `cid` here is nil to indicate if we should delete. that really doesn't make much sense and its super illogical
-			// when reading this code. i dont feel like fixing right now though so
+			// Create entry with empty CID to mark for deletion in the entries processing loop
+			// The Value stores the old record data needed for blob reference cleanup
 			entries = append(entries, models.Record{
 				Did:   urepo.Did,
 				Nsid:  op.Collection,
@@ -245,7 +260,7 @@ func (rm *RepoMan) applyWrites(ctx context.Context, urepo models.Repo, writes []
 				Type:             to.StringPtr(OpTypeUpdate.String()),
 				Uri:              to.StringPtr("at://" + urepo.Did + "/" + op.Collection + "/" + *op.Rkey),
 				Cid:              to.StringPtr(nc.String()),
-				ValidationStatus: to.StringPtr("valid"), // TODO: obviously this might not be true atm lol
+				ValidationStatus: to.StringPtr(rm.validateRecord(map[string]any(mm), op.Collection)),
 			})
 		}
 	}
@@ -330,40 +345,44 @@ func (rm *RepoMan) applyWrites(ctx context.Context, urepo models.Repo, writes []
 
 	// blob blob blob blob blob :3
 	var blobs []lexutil.LexLink
+	
+	// Process creates and updates, these have CID set
 	for _, entry := range entries {
-		var cids []cid.Cid
-		// whenever there is cid present, we know it's a create (dumb)
-		if entry.Cid != "" {
-			if err := rm.s.db.Create(ctx, &entry, []clause.Expression{clause.OnConflict{
-				Columns:   []clause.Column{{Name: "did"}, {Name: "nsid"}, {Name: "rkey"}},
-				UpdateAll: true,
-			}}).Error; err != nil {
-				return nil, err
-			}
-
-			// increment the given blob refs, yay
-			cids, err = rm.incrementBlobRefs(ctx, urepo, entry.Value)
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			// as i noted above this is dumb. but we delete whenever the cid is nil. it works solely becaue the pkey
-			// is did + collection + rkey. i still really want to separate that out, or use a different type to make
-			// this less confusing/easy to read. alas, its 2 am and yea no
-			if err := rm.s.db.Delete(ctx, &entry, nil).Error; err != nil {
-				return nil, err
-			}
-
-			// TODO:
-			cids, err = rm.decrementBlobRefs(ctx, urepo, entry.Value)
-			if err != nil {
-				return nil, err
-			}
+		if entry.Cid == "" {
+			continue // Skip delete entries, handled below
+		}
+		
+		if err := rm.s.db.Create(ctx, &entry, []clause.Expression{clause.OnConflict{
+			Columns:   []clause.Column{{Name: "did"}, {Name: "nsid"}, {Name: "rkey"}},
+			UpdateAll: true,
+		}}).Error; err != nil {
+			return nil, err
 		}
 
-		// add all the relevant blobs to the blobs list of blobs. blob ^.^
+		// increment the given blob refs and add to event blob list
+		cids, err := rm.incrementBlobRefs(ctx, urepo, entry.Value)
+		if err != nil {
+			return nil, err
+		}
 		for _, c := range cids {
 			blobs = append(blobs, lexutil.LexLink(c))
+		}
+	}
+
+	// Process deletes, these have empty CID
+	for _, entry := range entries {
+		if entry.Cid != "" {
+			continue // Skip create/update entries, handled above
+		}
+		
+		if err := rm.s.db.Delete(ctx, &entry, nil).Error; err != nil {
+			return nil, err
+		}
+
+		// Decrement blob refs (and cleanup if ref_count reaches 0)
+		// Note: deleted blobs are NOT added to the event blob list
+		if _, err := rm.decrementBlobRefs(ctx, urepo, entry.Value); err != nil {
+			return nil, err
 		}
 	}
 

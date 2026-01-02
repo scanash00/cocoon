@@ -22,6 +22,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/bluesky-social/indigo/api/atproto"
+	"github.com/bluesky-social/indigo/atproto/lexicon"
 	"github.com/bluesky-social/indigo/atproto/syntax"
 	"github.com/bluesky-social/indigo/events"
 	"github.com/bluesky-social/indigo/util"
@@ -84,9 +85,10 @@ type Server struct {
 	lastRequestCrawl time.Time
 	requestCrawlMu   sync.Mutex
 
-	dbName   string
-	dbType   string
-	s3Config *S3Config
+	dbName        string
+	dbType        string
+	s3Config      *S3Config
+	lexiconCatalog *lexicon.BaseCatalog
 }
 
 type Args struct {
@@ -421,7 +423,11 @@ func New(args *Args) (*Server, error) {
 
 	s.loadTemplates()
 
-	s.repoman = NewRepoMan(s) // TODO: this is way too lazy, stop it
+	// Initialize lexicon catalog for record validation
+	cat := lexicon.NewBaseCatalog()
+	s.lexiconCatalog = &cat
+
+	s.repoman = NewRepoMan(s)
 
 	// TODO: should validate these args
 	if args.SmtpUser == "" || args.SmtpPass == "" || args.SmtpHost == "" || args.SmtpPort == "" || args.SmtpEmail == "" || args.SmtpName == "" {
@@ -563,6 +569,7 @@ func (s *Server) Serve(ctx context.Context) error {
 		&models.BlobPart{},
 		&models.ReservedKey{},
 		&models.AppPassword{},
+		&models.EventSequence{},
 		&provider.OauthToken{},
 		&provider.OauthAuthorizationRequest{},
 	)
@@ -751,4 +758,28 @@ func (s *Server) UpdateRepo(ctx context.Context, did string, root cid.Cid, rev s
 	}
 
 	return nil
+}
+
+// nextSeq atomically increments and returns the next event sequence number.
+// This ensures monotonically increasing sequence numbers for subscribeRepos events.
+func (s *Server) nextSeq(ctx context.Context) int64 {
+	var result struct {
+		Seq int64
+	}
+
+	// Try to update existing row and return new value
+	err := s.db.Raw(ctx, "UPDATE event_sequences SET seq = seq + 1 WHERE id = 1 RETURNING seq", nil).Scan(&result).Error
+	if err != nil || result.Seq == 0 {
+		// Row doesn't exist, insert init value
+		s.db.Exec(ctx, "INSERT INTO event_sequences (id, seq) VALUES (1, 1) ON CONFLICT (id) DO UPDATE SET seq = event_sequences.seq + 1", nil)
+		// Fetch the current value
+		s.db.Raw(ctx, "SELECT seq FROM event_sequences WHERE id = 1", nil).Scan(&result)
+	}
+
+	if result.Seq == 0 {
+		// Fallback to time-based if DB fails (shouldn't happen in normal operation)
+		return time.Now().UnixMicro()
+	}
+
+	return result.Seq
 }

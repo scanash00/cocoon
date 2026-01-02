@@ -39,7 +39,7 @@ func (s *Server) handleServerActivateAccount(e echo.Context) error {
 			Active: true,
 			Did:    urepo.Repo.Did,
 			Status: nil,
-			Seq:    time.Now().UnixMicro(), // TODO: bad puppy
+			Seq:    s.nextSeq(ctx),
 			Time:   time.Now().Format(util.ISO8601),
 		},
 	})

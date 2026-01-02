@@ -93,7 +93,7 @@ func (s *Server) handleIdentityUpdateHandle(e echo.Context) error {
 		RepoIdentity: &atproto.SyncSubscribeRepos_Identity{
 			Did:    repo.Repo.Did,
 			Handle: to.StringPtr(req.Handle),
-			Seq:    time.Now().UnixMicro(), // TODO: no
+			Seq:    s.nextSeq(ctx),
 			Time:   time.Now().Format(util.ISO8601),
 		},
 	})

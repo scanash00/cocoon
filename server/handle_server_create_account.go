@@ -238,7 +238,7 @@ func (s *Server) handleCreateAccount(e echo.Context) error {
 			RepoIdentity: &atproto.SyncSubscribeRepos_Identity{
 				Did:    urepo.Did,
 				Handle: to.StringPtr(request.Handle),
-				Seq:    time.Now().UnixMicro(), // TODO: no
+				Seq:    s.nextSeq(ctx),
 				Time:   time.Now().Format(util.ISO8601),
 			},
 		})

@@ -207,7 +207,7 @@ Tracking error handling, validation, and proper ATProto error codes. Items marke
 - [ ] `com.atproto.identity.updateHandle`
 
 #### Repo
-- [ ] `com.atproto.repo.applyWrites`
+- [x] `com.atproto.repo.applyWrites`
 - [x] `com.atproto.repo.createRecord`
 - [x] `com.atproto.repo.putRecord`
 - [x] `com.atproto.repo.deleteRecord`
@@ -216,7 +216,7 @@ Tracking error handling, validation, and proper ATProto error codes. Items marke
 - [ ] `com.atproto.repo.importRepo`
 - [x] `com.atproto.repo.listRecords`
 - [x] `com.atproto.repo.listMissingBlobs`
-- [ ] `com.atproto.repo.uploadBlob`
+- [x] `com.atproto.repo.uploadBlob`
 
 #### Server
 - [ ] `com.atproto.server.activateAccount`
@@ -256,9 +256,9 @@ Tracking error handling, validation, and proper ATProto error codes. Items marke
 - [ ] `com.atproto.sync.subscribeRepos`
 
 #### Other
-- [ ] `com.atproto.label.queryLabels`
-- [ ] `app.bsky.actor.getPreferences`
-- [ ] `app.bsky.actor.putPreferences`
+- [x] `com.atproto.label.queryLabels`
+- [x] `app.bsky.actor.getPreferences`
+- [x] `app.bsky.actor.putPreferences`
 
 
 ### Identity

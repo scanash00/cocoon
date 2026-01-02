@@ -81,7 +81,7 @@ func (s *Server) handleSubmitPlcOperation(e echo.Context) error {
 	s.evtman.AddEvent(context.TODO(), &events.XRPCStreamEvent{
 		RepoIdentity: &atproto.SyncSubscribeRepos_Identity{
 			Did:  repo.Repo.Did,
-			Seq:  time.Now().UnixMicro(), // TODO: no
+			Seq:  s.nextSeq(e.Request().Context()),
 			Time: time.Now().Format(util.ISO8601),
 		},
 	})

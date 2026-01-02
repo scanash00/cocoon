@@ -40,7 +40,7 @@ func (s *Server) handleServerDeactivateAccount(e echo.Context) error {
 			Active: false,
 			Did:    urepo.Repo.Did,
 			Status: to.StringPtr("deactivated"),
-			Seq:    time.Now().UnixMicro(), // TODO: bad puppy
+			Seq:    s.nextSeq(ctx),
 			Time:   time.Now().Format(util.ISO8601),
 		},
 	})

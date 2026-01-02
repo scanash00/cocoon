@@ -135,3 +135,7 @@ type AppPassword struct {
 	CreatedAt  time.Time
 }
 
+type EventSequence struct {
+	ID  uint  `gorm:"primaryKey"`
+	Seq int64 `gorm:"not null;default:0"`
+}
