@@ -13,11 +13,16 @@
   <main class="container">
     <div class="app-info">
       <div class="app-icon">
+        {{ if .AppLogo }}
+        <img src="{{ .AppLogo }}" alt="{{ .AppName }}"
+          style="width: 100%; height: 100%; object-fit: cover; border-radius: inherit;" />
+        {{ else }}
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
           stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
           <path d="m7 11V7a5 5 0 0 1 10 0v4" />
         </svg>
+        {{ end }}
       </div>
       <div class="app-details">
         <h3>{{ .AppName }}</h3>

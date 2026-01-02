@@ -60,6 +60,7 @@ func (s *Server) handleOauthAuthorizeGet(e echo.Context) error {
 	data := map[string]any{
 		"Scopes":      scopes,
 		"AppName":     appName,
+		"AppLogo":     client.Metadata.LogoURI,
 		"RequestUri":  reqUri,
 		"QueryParams": e.QueryParams().Encode(),
 		"Handle":      repo.Actor.Handle,
