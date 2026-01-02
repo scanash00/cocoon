@@ -19,6 +19,7 @@ type ComAtprotoSyncGetBlocksRequest struct {
 
 func (s *Server) handleGetBlocks(e echo.Context) error {
 	ctx := e.Request().Context()
+	logger := s.logger.With("name", "handleSyncGetBlocks")
 
 	var req ComAtprotoSyncGetBlocksRequest
 	if err := e.Bind(&req); err != nil {
@@ -53,7 +54,7 @@ func (s *Server) handleGetBlocks(e echo.Context) error {
 	})
 
 	if _, err := carstore.LdWrite(buf, hb); err != nil {
-		s.logger.Error("error writing to car", "error", err)
+		logger.Error("error writing to car", "error", err)
 		return helpers.ServerError(e, nil)
 	}
 
