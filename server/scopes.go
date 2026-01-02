@@ -13,12 +13,12 @@ type scopeInfo struct {
 var scopeDescriptions = map[string]scopeInfo{
 	"atproto": {
 		Name:        "ATProto Access",
-		Description: "Confirm you're using an ATProto account",
+		Description: "Basic access to your ATProto account",
 		Icon:        "key",
 	},
 	"transition:generic": {
 		Name:        "Full App Access",
-		Description: "Read and write posts, upload media, access preferences",
+		Description: "Create, update, delete records, upload media, access preferences",
 		Icon:        "shield",
 	},
 	"transition:chat.bsky": {
@@ -218,18 +218,12 @@ func (s *Server) parseScopeForDisplay(scope string) scopeInfo {
 
 	if strings.HasPrefix(scope, "include:") {
 		setName := strings.TrimPrefix(scope, "include:")
-		parts := strings.Split(setName, ".")
-		if len(parts) > 0 {
-			shortName := parts[len(parts)-1]
-			return scopeInfo{
-				Name:        shortName,
-				Description: "App-specific permissions",
-				Icon:        "package",
-			}
+		if idx := strings.Index(setName, "?"); idx != -1 {
+			setName = setName[:idx]
 		}
 		return scopeInfo{
-			Name:        "Extended Permissions",
-			Description: "Additional app permissions",
+			Name:        setName,
+			Description: "Permission set",
 			Icon:        "package",
 		}
 	}
