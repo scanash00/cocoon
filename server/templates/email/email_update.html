@@ -1,0 +1,11 @@
+{{ define "body" }}
+<h1>Email Update</h1>
+<p>Hello <span class="accent">{{ .Handle }}</span>,</p>
+<p>You requested to change the email address associated with your account. Use the code below to confirm this change:
+</p>
+<div class="code-box">
+    <div class="code">{{ .Code }}</div>
+    <p class="expiry">This code expires in 10 minutes</p>
+</div>
+<p>If you didn't request this change, please contact support immediately and consider changing your password.</p>
+{{ end }}

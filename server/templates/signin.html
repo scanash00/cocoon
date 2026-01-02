@@ -3,31 +3,52 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="color-scheme" content="light dark" />
-    <link rel="stylesheet" href="/static/pico.css" />
+    <meta name="color-scheme" content="dark" />
     <link rel="stylesheet" href="/static/style.css" />
-    <title>PDS Authentication</title>
+    <title>Sign In</title>
   </head>
-  <body class="centered-body">
-    <main class="container base-container box-shadow-container login-container">
-      <h2>Sign into your account</h2>
-      <p>Enter your handle and password below.</p>
+  <body class="page-centered">
+    <main class="container">
+      <div class="section-header">
+        <h2>Sign in to your account</h2>
+        <p>Enter your handle and password to continue.</p>
+      </div>
+
       {{ if .flashes.errors }}
-      <div class="alert alert-danger margin-bottom-xs">
+      <div class="alert alert-danger">
         <p>{{ index .flashes.errors 0 }}</p>
       </div>
       {{ end }}
+
       <form action="/account/signin" method="post">
-        <input name="username" id="username" placeholder="Handle" />
-        <br />
-        <input
-          name="password"
-          id="password"
-          type="password"
-          placeholder="Password"
-        />
+        <div>
+          <label for="username">Handle</label>
+          <input 
+            type="text" 
+            name="username" 
+            id="username" 
+            placeholder="your.handle" 
+            autocomplete="username"
+            autofocus
+          />
+        </div>
+
+        <div>
+          <label for="password">Password</label>
+          <input
+            type="password"
+            name="password"
+            id="password"
+            placeholder="••••••••"
+            autocomplete="current-password"
+          />
+        </div>
+
         <input name="query_params" type="hidden" value="{{ .QueryParams }}" />
-        <button class="primary" type="submit" value="Login">Login</button>
+
+        <div class="btn-row">
+          <button type="submit" class="btn-primary">Sign In</button>
+        </div>
       </form>
     </main>
   </body>

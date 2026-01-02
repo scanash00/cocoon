@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - feature/dark-frontend-overhaul
     tags:
       - 'v*'
 

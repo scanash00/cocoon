@@ -1,44 +1,71 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="color-scheme" content="light dark" />
-    <link rel="stylesheet" href="/static/pico.css" />
-    <link rel="stylesheet" href="/static/style.css" />
-    <title>Application Authorization</title>
-  </head>
-  <body class="centered-body">
-    <main
-      class="container base-container box-shadow-container authorizer-container"
-    >
-      <h2>Authorizing with {{ .AppName }}</h2>
-      <p>
-        You are signed in as <b>{{ .Handle }}</b>.
-        <a href="/account/signout?{{ .QueryParams }}">Switch Account</a>
-      </p>
-      <p><b>{{ .AppName }}</b> is asking for you to grant it these scopes:</p>
-      <ul>
-        {{ range .Scopes }}
-        <li><b>{{.}}</b></li>
-        {{ end }}
-      </ul>
-      <p>
-        If you press Accept, the application will be granted permissions for
-        these scopes with your account <b>{{ .Handle }}</b>. If you reject, you
-        will be sent back to the application.
-      </p>
-      <form action="/oauth/authorize" method="post">
-        <div class="button-row">
-          <input type="hidden" name="request_uri" value="{{ .RequestUri }}" />
-          <button class="secondary" name="accept_or_reject" value="reject">
-            Reject
-          </button>
-          <button class="primary" name="accept_or_reject" value="accept">
-            Accept
-          </button>
-        </div>
-      </form>
-    </main>
-  </body>
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <link rel="stylesheet" href="/static/style.css" />
+  <title>Authorize {{ .AppName }}</title>
+</head>
+
+<body class="page-centered">
+  <main class="container">
+    <div class="app-info">
+      <div class="app-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+          <path d="m7 11V7a5 5 0 0 1 10 0v4" />
+        </svg>
+      </div>
+      <div class="app-details">
+        <h3>{{ .AppName }}</h3>
+        <p class="text-muted">wants to access your account</p>
+      </div>
+    </div>
+
+    <p>
+      You're signed in as <span class="user-badge">{{ .Handle }}</span>
+      <span class="link-row" style="margin-top: 0.5rem; display: block;">
+        <a href="/account/signout?{{ .QueryParams }}">Switch account</a>
+      </span>
+    </p>
+
+    <div class="divider"></div>
+
+    <p class="text-small text-muted" style="margin-bottom: 0.75rem;">This application is requesting the following
+      permissions:</p>
+
+    <ul class="scope-list">
+      {{ range .Scopes }}
+      <li class="scope-item">
+        <svg class="scope-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+          fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
+        <span>{{ . }}</span>
+      </li>
+      {{ end }}
+    </ul>
+
+    <p class="text-small text-muted">
+      By accepting, <strong>{{ .AppName }}</strong> will be able to use these permissions on behalf of <strong>{{
+        .Handle }}</strong>.
+    </p>
+
+    <form action="/oauth/authorize" method="post">
+      <input type="hidden" name="request_uri" value="{{ .RequestUri }}" />
+      <div class="btn-row">
+        <button type="submit" name="accept_or_reject" value="reject" class="btn-secondary">
+          Cancel
+        </button>
+        <button type="submit" name="accept_or_reject" value="accept" class="btn-primary">
+          Authorize
+        </button>
+      </div>
+    </form>
+  </main>
+</body>
+
 </html>

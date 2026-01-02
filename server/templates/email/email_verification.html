@@ -1,0 +1,10 @@
+{{ define "body" }}
+<h1>Verify Your Email</h1>
+<p>Hello <span class="accent">{{ .Handle }}</span>,</p>
+<p>Please verify your email address by entering the code below:</p>
+<div class="code-box">
+    <div class="code">{{ .Code }}</div>
+    <p class="expiry">This code expires in 10 minutes</p>
+</div>
+<p>If you didn't request this verification, you can safely ignore this email.</p>
+{{ end }}
