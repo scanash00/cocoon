@@ -1,6 +1,7 @@
 package server
 
 import (
+	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/haileyok/cocoon/internal/helpers"
 	"github.com/labstack/echo/v4"
 )
@@ -12,18 +13,17 @@ type ComAtprotoSyncGetRepoStatusResponse struct {
 	Rev    *string `json:"rev,omitempty"`
 }
 
-// TODO: make this actually do the right thing
 func (s *Server) handleSyncGetRepoStatus(e echo.Context) error {
 	ctx := e.Request().Context()
 
 	did := e.QueryParam("did")
 	if did == "" {
-		return helpers.InputError(e, nil)
+		return helpers.InputError(e, to.StringPtr("InvalidRequest"))
 	}
 
 	urepo, err := s.getRepoActorByDid(ctx, did)
 	if err != nil {
-		return err
+		return helpers.InputError(e, to.StringPtr("RepoNotFound"))
 	}
 
 	return e.JSON(200, ComAtprotoSyncGetRepoStatusResponse{

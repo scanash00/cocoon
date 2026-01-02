@@ -32,7 +32,7 @@ func (s *Server) handleCreateInviteCodes(e echo.Context) error {
 
 	if err := e.Validate(req); err != nil {
 		s.logger.Error("error validating", "error", err)
-		return helpers.InputError(e, nil)
+		return helpers.InputError(e, to.StringPtr("InvalidRequest"))
 	}
 
 	if req.CodeCount == nil {

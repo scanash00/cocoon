@@ -3,6 +3,7 @@ package server
 import (
 	"time"
 
+	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/haileyok/cocoon/internal/helpers"
 	"github.com/haileyok/cocoon/models"
 	"github.com/labstack/echo/v4"
@@ -26,7 +27,7 @@ func (s *Server) handleServerUpdateEmail(e echo.Context) error {
 	}
 
 	if err := e.Validate(req); err != nil {
-		return helpers.InputError(e, nil)
+		return helpers.InputError(e, to.StringPtr("InvalidRequest"))
 	}
 
 	if urepo.EmailUpdateCode == nil || urepo.EmailUpdateCodeExpiresAt == nil {

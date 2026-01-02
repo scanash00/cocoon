@@ -85,7 +85,7 @@ func (s *Server) handleOauthAuthorizePost(e echo.Context) error {
 	var req OauthAuthorizePostRequest
 	if err := e.Bind(&req); err != nil {
 		s.logger.Error("error binding authorize post request", "error", err)
-		return helpers.InputError(e, nil)
+		return helpers.InputError(e, to.StringPtr("InvalidRequest"))
 	}
 
 	reqId, err := oauth.DecodeRequestUri(req.RequestUri)

@@ -1,11 +1,11 @@
 package server
 
 import (
-	"bytes"
+
 
 	"github.com/bluesky-social/indigo/carstore"
+	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/haileyok/cocoon/internal/helpers"
-	"github.com/haileyok/cocoon/models"
 	"github.com/ipfs/go-cid"
 	cbor "github.com/ipfs/go-ipld-cbor"
 	"github.com/ipld/go-car"
@@ -17,17 +17,18 @@ func (s *Server) handleSyncGetRepo(e echo.Context) error {
 
 	did := e.QueryParam("did")
 	if did == "" {
-		return helpers.InputError(e, nil)
+		return helpers.InputError(e, to.StringPtr("InvalidRequest"))
 	}
 
 	urepo, err := s.getRepoActorByDid(ctx, did)
 	if err != nil {
-		return err
+		return helpers.InputError(e, to.StringPtr("RepoNotFound"))
 	}
 
 	rc, err := cid.Cast(urepo.Root)
 	if err != nil {
-		return err
+		s.logger.Error("error casting root cid", "error", err)
+		return helpers.ServerError(e, nil)
 	}
 
 	hb, err := cbor.DumpObject(&car.CarHeader{
@@ -35,23 +36,39 @@ func (s *Server) handleSyncGetRepo(e echo.Context) error {
 		Version: 1,
 	})
 
-	buf := new(bytes.Buffer)
+	e.Response().Header().Set(echo.HeaderContentType, "application/vnd.ipld.car")
+	e.Response().WriteHeader(200)
 
-	if _, err := carstore.LdWrite(buf, hb); err != nil {
+	if _, err := carstore.LdWrite(e.Response().Writer, hb); err != nil {
 		s.logger.Error("error writing to car", "error", err)
-		return helpers.ServerError(e, nil)
+		return nil
 	}
 
-	var blocks []models.Block
-	if err := s.db.Raw(ctx, "SELECT * FROM blocks WHERE did = ? ORDER BY rev ASC", nil, urepo.Repo.Did).Scan(&blocks).Error; err != nil {
-		return err
+	rows, err := s.db.Raw(ctx, "SELECT cid, value FROM blocks WHERE did = ? ORDER BY rev ASC", nil, urepo.Repo.Did).Rows()
+	if err != nil {
+		s.logger.Error("error getting blocks", "error", err)
+		return nil
 	}
+	defer rows.Close()
 
-	for _, block := range blocks {
-		if _, err := carstore.LdWrite(buf, block.Cid, block.Value); err != nil {
-			return err
+	var bCid []byte
+	var bVal []byte
+	for rows.Next() {
+		if err := rows.Scan(&bCid, &bVal); err != nil {
+			s.logger.Error("error scanning block", "error", err)
+			continue
+		}
+		
+		c, err := cid.Cast(bCid)
+		if err != nil {
+			continue
+		}
+
+		if _, err := carstore.LdWrite(e.Response().Writer, c.Bytes(), bVal); err != nil {
+			s.logger.Error("error writing block to car", "error", err)
+			return nil
 		}
 	}
 
-	return e.Stream(200, "application/vnd.ipld.car", bytes.NewReader(buf.Bytes()))
+	return nil
 }

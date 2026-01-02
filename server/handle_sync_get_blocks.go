@@ -4,6 +4,7 @@ import (
 	"bytes"
 
 	"github.com/bluesky-social/indigo/carstore"
+	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/haileyok/cocoon/internal/helpers"
 	"github.com/ipfs/go-cid"
 	cbor "github.com/ipfs/go-ipld-cbor"
@@ -21,7 +22,7 @@ func (s *Server) handleGetBlocks(e echo.Context) error {
 
 	var req ComAtprotoSyncGetBlocksRequest
 	if err := e.Bind(&req); err != nil {
-		return helpers.InputError(e, nil)
+		return helpers.InputError(e, to.StringPtr("InvalidRequest"))
 	}
 
 	var cids []cid.Cid

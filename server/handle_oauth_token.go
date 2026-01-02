@@ -59,7 +59,7 @@ func (s *Server) handleOauthToken(e echo.Context) error {
 			})
 		}
 		s.logger.Error("error getting dpop proof", "error", err)
-		return helpers.InputError(e, nil)
+		return helpers.InputError(e, to.StringPtr("InvalidRequest"))
 	}
 
 	client, clientAuth, err := s.oauthProvider.AuthenticateClient(e.Request().Context(), req.AuthenticateClientRequestBase, proof, &provider.AuthenticateClientOptions{

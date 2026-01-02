@@ -33,7 +33,7 @@ func (s *Server) handleIdentityUpdateHandle(e echo.Context) error {
 	req.Handle = strings.ToLower(req.Handle)
 
 	if err := e.Validate(req); err != nil {
-		return helpers.InputError(e, nil)
+		return helpers.InputError(e, to.StringPtr("InvalidHandle"))
 	}
 
 	ctx := context.WithValue(e.Request().Context(), "skip-cache", true)
@@ -73,11 +73,13 @@ func (s *Server) handleIdentityUpdateHandle(e echo.Context) error {
 		}
 
 		if err := s.plcClient.SignOp(k, &op); err != nil {
-			return err
+			s.logger.Error("error signing plc operation", "error", err)
+			return helpers.ServerError(e, nil)
 		}
 
 		if err := s.plcClient.SendOperation(e.Request().Context(), repo.Repo.Did, &op); err != nil {
-			return err
+			s.logger.Error("error sending plc operation", "error", err)
+			return helpers.ServerError(e, nil)
 		}
 	}
 
@@ -99,5 +101,5 @@ func (s *Server) handleIdentityUpdateHandle(e echo.Context) error {
 		return helpers.ServerError(e, nil)
 	}
 
-	return nil
+	return e.NoContent(200)
 }

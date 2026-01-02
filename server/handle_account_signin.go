@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"errors"
 	"strings"
 
@@ -73,28 +74,9 @@ func (s *Server) handleAccountSigninPost(e echo.Context) error {
 	sess, _ := session.Get("session", e)
 
 	req.Username = strings.ToLower(req.Username)
-	var idtype string
-	if _, err := syntax.ParseDID(req.Username); err == nil {
-		idtype = "did"
-	} else if _, err := syntax.ParseHandle(req.Username); err == nil {
-		idtype = "handle"
-	} else {
-		idtype = "email"
-	}
-
-	// TODO: we should make this a helper since we do it for the base create_session as well
-	var repo models.RepoActor
-	var err error
-	switch idtype {
-	case "did":
-		err = s.db.Raw(ctx, "SELECT r.*, a.* FROM repos r LEFT JOIN actors a ON r.did = a.did WHERE r.did = ?", nil, req.Username).Scan(&repo).Error
-	case "handle":
-		err = s.db.Raw(ctx, "SELECT r.*, a.* FROM actors a LEFT JOIN repos r ON a.did = r.did WHERE a.handle = ?", nil, req.Username).Scan(&repo).Error
-	case "email":
-		err = s.db.Raw(ctx, "SELECT r.*, a.* FROM repos r LEFT JOIN actors a ON r.did = a.did WHERE r.email = ?", nil, req.Username).Scan(&repo).Error
-	}
+	repo, err := s.getRepoActorByIdentifier(ctx, req.Username)
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			sess.AddFlash("Handle or password is incorrect", "error")
 		} else {
 			sess.AddFlash("Something went wrong!", "error")
@@ -104,9 +86,10 @@ func (s *Server) handleAccountSigninPost(e echo.Context) error {
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(repo.Password), []byte(req.Password)); err != nil {
-		if err != bcrypt.ErrMismatchedHashAndPassword {
+		if err == bcrypt.ErrMismatchedHashAndPassword {
 			sess.AddFlash("Handle or password is incorrect", "error")
 		} else {
+			s.logger.Error("bcrypt error", "error", err)
 			sess.AddFlash("Something went wrong!", "error")
 		}
 		sess.Save(e.Request(), e.Response())
@@ -131,4 +114,35 @@ func (s *Server) handleAccountSigninPost(e echo.Context) error {
 	} else {
 		return e.Redirect(303, "/account")
 	}
+}
+
+func (s *Server) getRepoActorByIdentifier(ctx context.Context, ident string) (*models.RepoActor, error) {
+	ident = strings.ToLower(ident)
+	var idtype string
+	if _, err := syntax.ParseDID(ident); err == nil {
+		idtype = "did"
+	} else if _, err := syntax.ParseHandle(ident); err == nil {
+		idtype = "handle"
+	} else {
+		idtype = "email"
+	}
+
+	var repo models.RepoActor
+	var err error
+	switch idtype {
+	case "did":
+		err = s.db.Raw(ctx, "SELECT r.*, a.* FROM repos r LEFT JOIN actors a ON r.did = a.did WHERE r.did = ?", nil, ident).Scan(&repo).Error
+	case "handle":
+		err = s.db.Raw(ctx, "SELECT r.*, a.* FROM actors a LEFT JOIN repos r ON a.did = r.did WHERE a.handle = ?", nil, ident).Scan(&repo).Error
+	case "email":
+		err = s.db.Raw(ctx, "SELECT r.*, a.* FROM repos r LEFT JOIN actors a ON r.did = a.did WHERE r.email = ?", nil, ident).Scan(&repo).Error
+	}
+
+	if err != nil {
+		return nil, err
+	}
+	if repo.Repo.Did == "" {
+		return nil, gorm.ErrRecordNotFound
+	}
+	return &repo, nil
 }

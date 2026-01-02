@@ -1,6 +1,7 @@
 package server
 
 import (
+	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/haileyok/cocoon/internal/helpers"
 	"github.com/ipfs/go-cid"
 	"github.com/labstack/echo/v4"
@@ -16,7 +17,7 @@ func (s *Server) handleSyncGetLatestCommit(e echo.Context) error {
 
 	did := e.QueryParam("did")
 	if did == "" {
-		return helpers.InputError(e, nil)
+		return helpers.InputError(e, to.StringPtr("InvalidRequest"))
 	}
 
 	urepo, err := s.getRepoActorByDid(ctx, did)

@@ -8,6 +8,10 @@ import (
 	"io"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/bluesky-social/indigo/api/atproto"
 	"github.com/bluesky-social/indigo/atproto/atdata"
@@ -434,20 +438,44 @@ func (rm *RepoMan) decrementBlobRefs(ctx context.Context, urepo models.Repo, cbo
 
 	for _, c := range cids {
 		var res struct {
-			ID    uint
-			Count int
+			ID      uint
+			Count   int
+			Storage string
 		}
-		if err := rm.db.Raw(ctx, "UPDATE blobs SET ref_count = ref_count - 1 WHERE did = ? AND cid = ? RETURNING id, ref_count", nil, urepo.Did, c.Bytes()).Scan(&res).Error; err != nil {
+		if err := rm.db.Raw(ctx, "UPDATE blobs SET ref_count = ref_count - 1 WHERE did = ? AND cid = ? RETURNING id, ref_count, storage", nil, urepo.Did, c.Bytes()).Scan(&res).Error; err != nil {
 			return nil, err
 		}
 
-		// TODO: this does _not_ handle deletions of blobs that are on s3 storage!!!! we need to get the blob, see what
-		// storage it is in, and clean up s3!!!!
-		if res.Count == 0 {
-			if err := rm.db.Exec(ctx, "DELETE FROM blobs WHERE id = ?", nil, res.ID).Error; err != nil {
-				return nil, err
+		if res.Count <= 0 {
+			if res.Storage == "s3" {
+				if rm.s.s3Config != nil && rm.s.s3Config.BlobstoreEnabled {
+					blobKey := fmt.Sprintf("blobs/%s/%s", urepo.Did, c.String())
+
+					config := &aws.Config{
+						Region:      aws.String(rm.s.s3Config.Region),
+						Credentials: credentials.NewStaticCredentials(rm.s.s3Config.AccessKey, rm.s.s3Config.SecretKey, ""),
+					}
+					if rm.s.s3Config.Endpoint != "" {
+						config.Endpoint = aws.String(rm.s.s3Config.Endpoint)
+						config.S3ForcePathStyle = aws.Bool(true)
+					}
+
+					sess, err := session.NewSession(config)
+					if err == nil {
+						svc := s3.New(sess)
+						_, _ = svc.DeleteObject(&s3.DeleteObjectInput{
+							Bucket: aws.String(rm.s.s3Config.Bucket),
+							Key:    aws.String(blobKey),
+						})
+					}
+				}
+			} else {
+				if err := rm.db.Exec(ctx, "DELETE FROM blob_parts WHERE blob_id = ?", nil, res.ID).Error; err != nil {
+					return nil, err
+				}
 			}
-			if err := rm.db.Exec(ctx, "DELETE FROM blob_parts WHERE blob_id = ?", nil, res.ID).Error; err != nil {
+
+			if err := rm.db.Exec(ctx, "DELETE FROM blobs WHERE id = ?", nil, res.ID).Error; err != nil {
 				return nil, err
 			}
 		}

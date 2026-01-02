@@ -27,7 +27,7 @@ func (s *Server) handleServerResetPassword(e echo.Context) error {
 	}
 
 	if err := e.Validate(req); err != nil {
-		return helpers.InputError(e, nil)
+		return helpers.InputError(e, to.StringPtr("InvalidRequest"))
 	}
 
 	if urepo.PasswordResetCode == nil || urepo.PasswordResetCodeExpiresAt == nil {

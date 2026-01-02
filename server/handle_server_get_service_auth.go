@@ -32,7 +32,7 @@ func (s *Server) handleServerGetServiceAuth(e echo.Context) error {
 	}
 
 	if err := e.Validate(req); err != nil {
-		return helpers.InputError(e, nil)
+		return helpers.InputError(e, to.StringPtr("InvalidRequest"))
 	}
 
 	exp := int64(req.Exp)

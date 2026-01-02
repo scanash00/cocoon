@@ -1,6 +1,7 @@
 package server
 
 import (
+	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/haileyok/cocoon/internal/helpers"
 	"github.com/haileyok/cocoon/models"
 	"github.com/labstack/echo/v4"
@@ -36,14 +37,14 @@ func (s *Server) handleApplyWrites(e echo.Context) error {
 
 	if err := e.Validate(req); err != nil {
 		s.logger.Error("error validating", "error", err)
-		return helpers.InputError(e, nil)
+		return helpers.InputError(e, to.StringPtr("InvalidRequest"))
 	}
 
 	repo := e.Get("repo").(*models.RepoActor)
 
 	if repo.Repo.Did != req.Repo {
 		s.logger.Warn("mismatched repo/auth")
-		return helpers.InputError(e, nil)
+		return helpers.InputError(e, to.StringPtr("InvalidRequest"))
 	}
 
 	ops := make([]Op, 0, len(req.Writes))

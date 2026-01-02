@@ -70,13 +70,13 @@ func (s *Server) handleLegacySessionMiddleware(next echo.HandlerFunc) echo.Handl
 			pts := strings.Split(e.Request().URL.String(), "/")
 			if lxm != pts[len(pts)-1] {
 				s.logger.Error("service auth lxm incorrect", "lxm", lxm, "expected", pts[len(pts)-1], "error", err)
-				return helpers.InputError(e, nil)
+				return helpers.InputError(e, to.StringPtr("InvalidToken"))
 			}
 
 			maybeDid, ok := claims["iss"].(string)
 			if !ok {
 				s.logger.Error("no iss in service auth token", "error", err)
-				return helpers.InputError(e, nil)
+				return helpers.InputError(e, to.StringPtr("InvalidToken"))
 			}
 			did = maybeDid
 
@@ -258,13 +258,13 @@ func (s *Server) handleOauthSessionMiddleware(next echo.HandlerFunc) echo.Handle
 				})
 			}
 			s.logger.Error("invalid dpop proof", "error", err)
-			return helpers.InputError(e, nil)
+			return helpers.InputError(e, to.StringPtr("InvalidDPoP"))
 		}
 
 		var oauthToken provider.OauthToken
 		if err := s.db.Raw(ctx, "SELECT * FROM oauth_tokens WHERE token = ?", nil, accessToken).Scan(&oauthToken).Error; err != nil {
 			s.logger.Error("error finding access token in db", "error", err)
-			return helpers.InputError(e, nil)
+			return helpers.ServerError(e, nil)
 		}
 
 		if oauthToken.Token == "" {

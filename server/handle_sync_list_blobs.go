@@ -1,6 +1,8 @@
 package server
 
 import (
+	"strconv"
+	
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/haileyok/cocoon/internal/helpers"
 	"github.com/haileyok/cocoon/models"
@@ -18,14 +20,17 @@ func (s *Server) handleSyncListBlobs(e echo.Context) error {
 
 	did := e.QueryParam("did")
 	if did == "" {
-		return helpers.InputError(e, nil)
+		return helpers.InputError(e, to.StringPtr("InvalidRequest"))
 	}
 
-	// TODO: add tid param
+	// cursor is time-based
 	cursor := e.QueryParam("cursor")
-	limit, err := getLimitFromContext(e, 50)
-	if err != nil {
-		return helpers.InputError(e, nil)
+	
+	limit := 500
+	if limitStr := e.QueryParam("limit"); limitStr != "" {
+		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 && l <= 1000 {
+			limit = l
+		}
 	}
 
 	cursorquery := ""
@@ -40,7 +45,7 @@ func (s *Server) handleSyncListBlobs(e echo.Context) error {
 	urepo, err := s.getRepoActorByDid(ctx, did)
 	if err != nil {
 		s.logger.Error("could not find user for requested blobs", "error", err)
-		return helpers.InputError(e, nil)
+		return helpers.InputError(e, to.StringPtr("InvalidRequest"))
 	}
 
 	status := urepo.Status()
@@ -67,7 +72,7 @@ func (s *Server) handleSyncListBlobs(e echo.Context) error {
 	}
 
 	var newcursor *string
-	if len(blobs) == 50 {
+	if len(blobs) == limit {
 		newcursor = &blobs[len(blobs)-1].CreatedAt
 	}
 

@@ -24,7 +24,7 @@ func (s *Server) handleDescribeServer(e echo.Context) error {
 	return e.JSON(200, ComAtprotoServerDescribeServerResponse{
 		InviteCodeRequired:        s.config.RequireInvite,
 		PhoneVerificationRequired: false,
-		AvailableUserDomains:      []string{"." + s.config.Hostname}, // TODO: more
+		AvailableUserDomains:      []string{"." + s.config.Hostname},
 		Links: ComAtprotoServerDescribeServerResponseLinks{
 			PrivacyPolicy:  nil,
 			TermsOfService: nil,

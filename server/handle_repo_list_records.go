@@ -1,7 +1,7 @@
 package server
 
 import (
-	"strconv"
+
 
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/bluesky-social/indigo/atproto/atdata"
@@ -30,20 +30,7 @@ type ComAtprotoRepoListRecordsRecordItem struct {
 	Value map[string]any `json:"value"`
 }
 
-func getLimitFromContext(e echo.Context, def int) (int, error) {
-	limit := def
-	limitstr := e.QueryParam("limit")
 
-	if limitstr != "" {
-		l64, err := strconv.ParseInt(limitstr, 10, 32)
-		if err != nil {
-			return 0, err
-		}
-		limit = int(l64)
-	}
-
-	return limit, nil
-}
 
 func (s *Server) handleListRecords(e echo.Context) error {
 	ctx := e.Request().Context()
@@ -55,7 +42,7 @@ func (s *Server) handleListRecords(e echo.Context) error {
 	}
 
 	if err := e.Validate(req); err != nil {
-		return helpers.InputError(e, nil)
+		return helpers.InputError(e, to.StringPtr("InvalidRequest"))
 	}
 
 	if req.Limit <= 0 {
@@ -64,15 +51,10 @@ func (s *Server) handleListRecords(e echo.Context) error {
 		req.Limit = 100
 	}
 
-	limit, err := getLimitFromContext(e, 50)
-	if err != nil {
-		return helpers.InputError(e, nil)
-	}
-
 	sort := "DESC"
 	dir := "<"
 	cursorquery := ""
-
+	
 	if req.Reverse {
 		sort = "ASC"
 		dir = ">"
@@ -92,7 +74,7 @@ func (s *Server) handleListRecords(e echo.Context) error {
 		params = append(params, req.Cursor)
 		cursorquery = "AND created_at " + dir + " ?"
 	}
-	params = append(params, limit)
+	params = append(params, req.Limit)
 
 	var records []models.Record
 	if err := s.db.Raw(ctx, "SELECT * FROM records WHERE did = ? AND nsid = ? "+cursorquery+" ORDER BY created_at "+sort+" limit ?", nil, params...).Scan(&records).Error; err != nil {
@@ -104,7 +86,8 @@ func (s *Server) handleListRecords(e echo.Context) error {
 	for _, r := range records {
 		val, err := atdata.UnmarshalCBOR(r.Value)
 		if err != nil {
-			return err
+			s.logger.Error("error unmarshaling record", "error", err)
+			continue // skip invalid records instead of failing entire list
 		}
 
 		items = append(items, ComAtprotoRepoListRecordsRecordItem{
@@ -115,7 +98,7 @@ func (s *Server) handleListRecords(e echo.Context) error {
 	}
 
 	var newcursor *string
-	if len(records) == limit {
+	if int64(len(records)) == req.Limit {
 		newcursor = to.StringPtr(records[len(records)-1].CreatedAt)
 	}
 

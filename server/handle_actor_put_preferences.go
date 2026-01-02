@@ -2,7 +2,8 @@ package server
 
 import (
 	"encoding/json"
-
+	
+	"github.com/haileyok/cocoon/internal/helpers"
 	"github.com/haileyok/cocoon/models"
 	"github.com/labstack/echo/v4"
 )
@@ -16,16 +17,16 @@ func (s *Server) handleActorPutPreferences(e echo.Context) error {
 
 	var prefs map[string]any
 	if err := json.NewDecoder(e.Request().Body).Decode(&prefs); err != nil {
-		return err
+		s.logger.Error("error", "error", err); return helpers.ServerError(e, nil)
 	}
 
 	b, err := json.Marshal(prefs)
 	if err != nil {
-		return err
+		s.logger.Error("error", "error", err); return helpers.ServerError(e, nil)
 	}
 
 	if err := s.db.Exec(ctx, "UPDATE repos SET preferences = ? WHERE did = ?", nil, b, repo.Repo.Did).Error; err != nil {
-		return err
+		s.logger.Error("error", "error", err); return helpers.ServerError(e, nil)
 	}
 
 	return nil

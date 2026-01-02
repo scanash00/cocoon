@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/haileyok/cocoon/internal/helpers"
 	"github.com/haileyok/cocoon/models"
 	"github.com/labstack/echo/v4"
@@ -20,16 +21,17 @@ func (s *Server) handleServerRequestPasswordReset(e echo.Context) error {
 	if !ok {
 		var req ComAtprotoServerRequestPasswordResetRequest
 		if err := e.Bind(&req); err != nil {
-			return err
+			s.logger.Error("error binding", "error", err)
+			return helpers.InputError(e, to.StringPtr("InvalidRequest"))
 		}
 
 		if err := e.Validate(req); err != nil {
-			return err
+			return helpers.InputError(e, to.StringPtr("InvalidRequest"))
 		}
 
 		murepo, err := s.getRepoActorByEmail(ctx, req.Email)
 		if err != nil {
-			return err
+			return e.NoContent(200)
 		}
 
 		urepo = murepo

@@ -29,7 +29,7 @@ func (s *Server) handleOauthPar(e echo.Context) error {
 
 	if err := e.Validate(parRequest); err != nil {
 		s.logger.Error("missing parameters for par request", "error", err)
-		return helpers.InputError(e, nil)
+		return helpers.InputError(e, to.StringPtr("InvalidRequest"))
 	}
 
 	// TODO: this seems wrong. should be a way to get the entire request url i believe, but this will work for now
@@ -46,7 +46,7 @@ func (s *Server) handleOauthPar(e echo.Context) error {
 			})
 		}
 		s.logger.Error("error getting dpop proof", "error", err)
-		return helpers.InputError(e, nil)
+		return helpers.InputError(e, to.StringPtr("InvalidRequest"))
 	}
 
 	client, clientAuth, err := s.oauthProvider.AuthenticateClient(e.Request().Context(), parRequest.AuthenticateClientRequestBase, dpopProof, &provider.AuthenticateClientOptions{

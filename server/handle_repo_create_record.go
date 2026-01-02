@@ -1,6 +1,7 @@
 package server
 
 import (
+	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/haileyok/cocoon/internal/helpers"
 	"github.com/haileyok/cocoon/models"
 	"github.com/labstack/echo/v4"
@@ -12,7 +13,6 @@ type ComAtprotoRepoCreateRecordInput struct {
 	Rkey       *string        `json:"rkey,omitempty"`
 	Validate   *bool          `json:"bool,omitempty"`
 	Record     MarshalableMap `json:"record" validate:"required"`
-	SwapRecord *string        `json:"swapRecord"`
 	SwapCommit *string        `json:"swapCommit"`
 }
 
@@ -24,32 +24,26 @@ func (s *Server) handleCreateRecord(e echo.Context) error {
 	var req ComAtprotoRepoCreateRecordInput
 	if err := e.Bind(&req); err != nil {
 		s.logger.Error("error binding", "error", err)
-		return helpers.ServerError(e, nil)
+		return helpers.InputError(e, to.StringPtr("InvalidRequest"))
 	}
 
 	if err := e.Validate(req); err != nil {
 		s.logger.Error("error validating", "error", err)
-		return helpers.InputError(e, nil)
+		return helpers.InputError(e, to.StringPtr("InvalidRequest"))
 	}
 
 	if repo.Repo.Did != req.Repo {
 		s.logger.Warn("mismatched repo/auth")
-		return helpers.InputError(e, nil)
-	}
-
-	optype := OpTypeCreate
-	if req.SwapRecord != nil {
-		optype = OpTypeUpdate
+		return helpers.InputError(e, to.StringPtr("InvalidRequest"))
 	}
 
 	results, err := s.repoman.applyWrites(ctx, repo.Repo, []Op{
 		{
-			Type:       optype,
+			Type:       OpTypeCreate,
 			Collection: req.Collection,
 			Rkey:       req.Rkey,
 			Validate:   req.Validate,
 			Record:     &req.Record,
-			SwapRecord: req.SwapRecord,
 		},
 	}, req.SwapCommit)
 	if err != nil {

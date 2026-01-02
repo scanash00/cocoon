@@ -1,6 +1,7 @@
 package server
 
 import (
+	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/haileyok/cocoon/internal/helpers"
 	"github.com/haileyok/cocoon/models"
 	"github.com/labstack/echo/v4"
@@ -29,12 +30,12 @@ func (s *Server) handlePutRecord(e echo.Context) error {
 
 	if err := e.Validate(req); err != nil {
 		s.logger.Error("error validating", "error", err)
-		return helpers.InputError(e, nil)
+		return helpers.InputError(e, to.StringPtr("InvalidRequest"))
 	}
 
 	if repo.Repo.Did != req.Repo {
 		s.logger.Warn("mismatched repo/auth")
-		return helpers.InputError(e, nil)
+		return helpers.InputError(e, to.StringPtr("InvalidRequest"))
 	}
 
 	optype := OpTypeCreate

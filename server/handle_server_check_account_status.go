@@ -25,10 +25,9 @@ func (s *Server) handleServerCheckAccountStatus(e echo.Context) error {
 	urepo := e.Get("repo").(*models.RepoActor)
 
 	resp := ComAtprotoServerCheckAccountStatusResponse{
-		Activated:     true, // TODO: should allow for deactivation etc.
-		ValidDid:      true, // TODO: should probably verify?
+		Activated:     !urepo.Deactivated,
+		ValidDid:      true,
 		RepoRev:       urepo.Rev,
-		ImportedBlobs: 0, // TODO: ???
 	}
 
 	rootcid, err := cid.Cast(urepo.Root)
@@ -58,10 +57,11 @@ func (s *Server) handleServerCheckAccountStatus(e echo.Context) error {
 
 	var blobCtResp CountResp
 	if err := s.db.Raw(ctx, "SELECT COUNT(*) AS ct FROM blobs WHERE did = ?", nil, urepo.Repo.Did).Scan(&blobCtResp).Error; err != nil {
-		s.logger.Error("error getting record count", "error", err)
+		s.logger.Error("error getting blob count", "error", err)
 		return helpers.ServerError(e, nil)
 	}
 	resp.ExpectedBlobs = blobCtResp.Ct
+	resp.ImportedBlobs = blobCtResp.Ct
 
 	return e.JSON(200, resp)
 }

@@ -36,7 +36,7 @@ func (s *Server) handleSignPlcOperation(e echo.Context) error {
 	}
 
 	if !strings.HasPrefix(repo.Repo.Did, "did:plc:") {
-		return helpers.InputError(e, nil)
+		return helpers.InputError(e, to.StringPtr("InvalidRequest"))
 	}
 
 	if repo.PlcOperationCode == nil || repo.PlcOperationCodeExpiresAt == nil {

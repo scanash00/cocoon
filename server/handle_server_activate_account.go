@@ -20,7 +20,7 @@ type ComAtprotoServerActivateAccountRequest struct {
 func (s *Server) handleServerActivateAccount(e echo.Context) error {
 	ctx := e.Request().Context()
 
-	var req ComAtprotoServerDeactivateAccountRequest
+	var req ComAtprotoServerActivateAccountRequest
 	if err := e.Bind(&req); err != nil {
 		s.logger.Error("error binding", "error", err)
 		return helpers.ServerError(e, nil)

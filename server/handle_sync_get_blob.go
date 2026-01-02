@@ -1,7 +1,7 @@
 package server
 
 import (
-	"bytes"
+
 	"fmt"
 	"io"
 
@@ -21,23 +21,23 @@ func (s *Server) handleSyncGetBlob(e echo.Context) error {
 
 	did := e.QueryParam("did")
 	if did == "" {
-		return helpers.InputError(e, nil)
+		return helpers.InputError(e, to.StringPtr("InvalidRequest"))
 	}
 
 	cstr := e.QueryParam("cid")
 	if cstr == "" {
-		return helpers.InputError(e, nil)
+		return helpers.InputError(e, to.StringPtr("InvalidRequest"))
 	}
 
 	c, err := cid.Parse(cstr)
 	if err != nil {
-		return helpers.InputError(e, nil)
+		return helpers.InputError(e, to.StringPtr("InvalidRequest"))
 	}
 
 	urepo, err := s.getRepoActorByDid(ctx, did)
 	if err != nil {
 		s.logger.Error("could not find user for requested blob", "error", err)
-		return helpers.InputError(e, nil)
+		return helpers.InputError(e, to.StringPtr("InvalidRequest"))
 	}
 
 	status := urepo.Status()
@@ -53,23 +53,32 @@ func (s *Server) handleSyncGetBlob(e echo.Context) error {
 		return helpers.ServerError(e, nil)
 	}
 
-	buf := new(bytes.Buffer)
+	e.Response().Header().Set(echo.HeaderContentDisposition, "attachment; filename="+c.String())
+	e.Response().Header().Set(echo.HeaderContentType, "application/octet-stream")
+	e.Response().WriteHeader(200)
 
 	if blob.Storage == "sqlite" {
-		var parts []models.BlobPart
-		if err := s.db.Raw(ctx, "SELECT * FROM blob_parts WHERE blob_id = ? ORDER BY idx", nil, blob.ID).Scan(&parts).Error; err != nil {
+		rows, err := s.db.Raw(ctx, "SELECT data FROM blob_parts WHERE blob_id = ? ORDER BY idx", nil, blob.ID).Rows()
+		if err != nil {
 			s.logger.Error("error getting blob parts", "error", err)
-			return helpers.ServerError(e, nil)
+			return nil // Response already sent
 		}
+		defer rows.Close()
 
-		// TODO: we can just stream this, don't need to make a buffer
-		for _, p := range parts {
-			buf.Write(p.Data)
+		var data []byte
+		for rows.Next() {
+			if err := rows.Scan(&data); err != nil {
+				s.logger.Error("error scanning blob part", "error", err)
+				continue
+			}
+			if _, err := e.Response().Write(data); err != nil {
+				return nil
+			}
 		}
 	} else if blob.Storage == "s3" {
 		if !(s.s3Config != nil && s.s3Config.BlobstoreEnabled) {
 			s.logger.Error("s3 storage disabled")
-			return helpers.ServerError(e, nil)
+			return nil
 		}
 
 		blobKey := fmt.Sprintf("blobs/%s/%s", urepo.Repo.Did, c.String())
@@ -92,44 +101,28 @@ func (s *Server) handleSyncGetBlob(e echo.Context) error {
 		sess, err := session.NewSession(config)
 		if err != nil {
 			s.logger.Error("error creating aws session", "error", err)
-			return helpers.ServerError(e, nil)
+			return nil
 		}
 
 		svc := s3.New(sess)
-		if result, err := svc.GetObject(&s3.GetObjectInput{
+		result, err := svc.GetObject(&s3.GetObjectInput{
 			Bucket: aws.String(s.s3Config.Bucket),
 			Key:    aws.String(blobKey),
-		}); err != nil {
+		})
+		if err != nil {
 			s.logger.Error("error getting blob from s3", "error", err)
-			return helpers.ServerError(e, nil)
-		} else {
-			read := 0
-			part := 0
-			partBuf := make([]byte, 0x10000)
+			return nil
+		}
+		defer result.Body.Close()
 
-			for {
-				n, err := io.ReadFull(result.Body, partBuf)
-				if err == io.ErrUnexpectedEOF || err == io.EOF {
-					if n == 0 {
-						break
-					}
-				} else if err != nil && err != io.ErrUnexpectedEOF {
-					s.logger.Error("error reading blob", "error", err)
-					return helpers.ServerError(e, nil)
-				}
-
-				data := partBuf[:n]
-				read += n
-				buf.Write(data)
-				part++
-			}
+		if _, err := io.Copy(e.Response().Writer, result.Body); err != nil {
+			s.logger.Error("error streaming blob from s3", "error", err)
+			return nil
 		}
 	} else {
 		s.logger.Error("unknown storage", "storage", blob.Storage)
-		return helpers.ServerError(e, nil)
+		return nil
 	}
 
-	e.Response().Header().Set(echo.HeaderContentDisposition, "attachment; filename="+c.String())
-
-	return e.Stream(200, "application/octet-stream", buf)
+	return nil
 }

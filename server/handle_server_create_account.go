@@ -53,8 +53,7 @@ func (s *Server) handleCreateAccount(e echo.Context) error {
 		var verr ValidationError
 		if errors.As(err, &verr) {
 			if verr.Field == "Email" {
-				// TODO: what is this supposed to be? `InvalidEmail` isn't listed in doc
-				return helpers.InputError(e, to.StringPtr("InvalidEmail"))
+				return helpers.InputError(e, to.StringPtr("InvalidRequest"))
 			}
 
 			if verr.Field == "Handle" {
@@ -134,7 +133,9 @@ func (s *Server) handleCreateAccount(e echo.Context) error {
 		return helpers.InputError(e, to.StringPtr("EmailNotAvailable"))
 	}
 
-	// TODO: unsupported domains
+	if !strings.HasSuffix(request.Handle, "."+s.config.Hostname) {
+		return helpers.InputError(e, to.StringPtr("UnsupportedDomain"))
+	}
 
 	var k *atcrypto.PrivateKeyK256
 

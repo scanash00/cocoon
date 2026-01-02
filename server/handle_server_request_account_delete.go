@@ -44,6 +44,7 @@ func (s *Server) sendAccountDeleteEmail(email, handle, token string) error {
 	s.mail.Plain().Set(fmt.Sprintf("Hello %s. Your account deletion code is %s. This code will expire in fifteen minutes. If you did not request this, please ignore this email.", handle, token))
 
 	if err := s.mail.Send(); err != nil {
+		s.logger.Error("error sending email", "error", err)
 		return err
 	}
 

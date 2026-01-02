@@ -192,7 +192,74 @@ docker-compose up -d
 ## Implemented Endpoints
 
 > [!NOTE]
-Just because something is implemented doesn't mean it is finished. Tons of these are returning bad errors, don't do validation properly, etc. I'll make a "second pass" checklist at some point to do all of that.
+> Just because something is implemented doesn't mean it is finished. See the "Second Pass Checklist" section below for tracking improvements.
+
+### Second Pass Checklist
+
+Tracking error handling, validation, and proper ATProto error codes. Items marked with `[x]` have been reviewed and improved.
+
+#### Identity
+- [x] `com.atproto.identity.getRecommendedDidCredentials`
+- [x] `com.atproto.identity.requestPlcOperationSignature`
+- [x] `com.atproto.identity.resolveHandle`
+- [x] `com.atproto.identity.signPlcOperation`
+- [ ] `com.atproto.identity.submitPlcOperation`
+- [ ] `com.atproto.identity.updateHandle`
+
+#### Repo
+- [ ] `com.atproto.repo.applyWrites`
+- [x] `com.atproto.repo.createRecord`
+- [x] `com.atproto.repo.putRecord`
+- [x] `com.atproto.repo.deleteRecord`
+- [x] `com.atproto.repo.describeRepo`
+- [x] `com.atproto.repo.getRecord`
+- [ ] `com.atproto.repo.importRepo`
+- [x] `com.atproto.repo.listRecords`
+- [x] `com.atproto.repo.listMissingBlobs`
+- [ ] `com.atproto.repo.uploadBlob`
+
+#### Server
+- [ ] `com.atproto.server.activateAccount`
+- [x] `com.atproto.server.checkAccountStatus`
+- [x] `com.atproto.server.confirmEmail`
+- [ ] `com.atproto.server.createAccount`
+- [x] `com.atproto.server.createAppPassword`
+- [x] `com.atproto.server.createInviteCode`
+- [x] `com.atproto.server.createInviteCodes`
+- [x] `com.atproto.server.createSession`
+- [ ] `com.atproto.server.deactivateAccount`
+- [x] `com.atproto.server.deleteAccount`
+- [x] `com.atproto.server.deleteSession`
+- [x] `com.atproto.server.describeServer`
+- [x] `com.atproto.server.getServiceAuth`
+- [x] `com.atproto.server.getSession`
+- [x] `com.atproto.server.listAppPasswords`
+- [x] `com.atproto.server.refreshSession`
+- [x] `com.atproto.server.requestAccountDelete`
+- [x] `com.atproto.server.requestEmailConfirmation`
+- [x] `com.atproto.server.requestEmailUpdate`
+- [x] `com.atproto.server.requestPasswordReset`
+- [x] `com.atproto.server.reserveSigningKey`
+- [x] `com.atproto.server.resetPassword`
+- [x] `com.atproto.server.revokeAppPassword`
+- [x] `com.atproto.server.updateEmail`
+
+#### Sync
+- [x] `com.atproto.sync.getBlob`
+- [x] `com.atproto.sync.getBlocks`
+- [x] `com.atproto.sync.getLatestCommit`
+- [x] `com.atproto.sync.getRecord`
+- [x] `com.atproto.sync.getRepoStatus`
+- [x] `com.atproto.sync.getRepo`
+- [x] `com.atproto.sync.listBlobs`
+- [x] `com.atproto.sync.listRepos`
+- [ ] `com.atproto.sync.subscribeRepos`
+
+#### Other
+- [ ] `com.atproto.label.queryLabels`
+- [ ] `app.bsky.actor.getPreferences`
+- [ ] `app.bsky.actor.putPreferences`
+
 
 ### Identity
 

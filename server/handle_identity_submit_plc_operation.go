@@ -10,6 +10,7 @@ import (
 	"github.com/bluesky-social/indigo/atproto/atcrypto"
 	"github.com/bluesky-social/indigo/events"
 	"github.com/bluesky-social/indigo/util"
+	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/haileyok/cocoon/internal/helpers"
 	"github.com/haileyok/cocoon/models"
 	"github.com/haileyok/cocoon/plc"
@@ -30,10 +31,10 @@ func (s *Server) handleSubmitPlcOperation(e echo.Context) error {
 	}
 
 	if err := e.Validate(req); err != nil {
-		return helpers.InputError(e, nil)
+		return helpers.InputError(e, to.StringPtr("InvalidRequest"))
 	}
 	if !strings.HasPrefix(repo.Repo.Did, "did:plc:") {
-		return helpers.InputError(e, nil)
+		return helpers.InputError(e, to.StringPtr("InvalidRequest"))
 	}
 
 	op := req.Operation
@@ -51,24 +52,24 @@ func (s *Server) handleSubmitPlcOperation(e echo.Context) error {
 
 	for _, expectedKey := range required.RotationKeys {
 		if !slices.Contains(op.RotationKeys, expectedKey) {
-			return helpers.InputError(e, nil)
+			return helpers.InputError(e, to.StringPtr("InvalidRequest"))
 		}
 	}
 	if op.Services["atproto_pds"].Type != "AtprotoPersonalDataServer" {
-		return helpers.InputError(e, nil)
+		return helpers.InputError(e, to.StringPtr("InvalidRequest"))
 	}
 	if op.Services["atproto_pds"].Endpoint != required.Services["atproto_pds"].Endpoint {
-		return helpers.InputError(e, nil)
+		return helpers.InputError(e, to.StringPtr("InvalidRequest"))
 	}
 	if op.VerificationMethods["atproto"] != required.VerificationMethods["atproto"] {
-		return helpers.InputError(e, nil)
+		return helpers.InputError(e, to.StringPtr("InvalidRequest"))
 	}
 	if op.AlsoKnownAs[0] != required.AlsoKnownAs[0] {
-		return helpers.InputError(e, nil)
+		return helpers.InputError(e, to.StringPtr("InvalidRequest"))
 	}
 
 	if err := s.plcClient.SendOperation(e.Request().Context(), repo.Repo.Did, &op); err != nil {
-		return err
+		s.logger.Error("error", "error", err); return helpers.ServerError(e, nil)
 	}
 
 	if err := s.passport.BustDoc(context.TODO(), repo.Repo.Did); err != nil {
