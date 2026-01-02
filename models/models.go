@@ -121,8 +121,17 @@ type BlobPart struct {
 }
 
 type ReservedKey struct {
-	KeyDid    string `gorm:"primaryKey"`
-	Did       *string `gorm:"index"`
+	KeyDid     string  `gorm:"primaryKey"`
+	Did        *string `gorm:"index"`
 	PrivateKey []byte
 	CreatedAt  time.Time `gorm:"index"`
 }
+
+type AppPassword struct {
+	Name       string    `gorm:"primaryKey"`
+	Did        string    `gorm:"primaryKey;index"`
+	Password   string
+	Privileged bool
+	CreatedAt  time.Time
+}
+

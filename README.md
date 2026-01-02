@@ -229,7 +229,7 @@ Just because something is implemented doesn't mean it is finished. Tons of these
 - [x] `com.atproto.server.describeServer`
 - [ ] `com.atproto.server.getAccountInviteCodes`
 - [x] `com.atproto.server.getServiceAuth`
-- ~~[ ] `com.atproto.server.listAppPasswords`~~ - not going to add app passwords
+- [x] `com.atproto.server.listAppPasswords` -  willy wonka
 - [x] `com.atproto.server.refreshSession`
 - [x] `com.atproto.server.requestAccountDelete`
 - [x] `com.atproto.server.requestEmailConfirmation`
@@ -237,7 +237,7 @@ Just because something is implemented doesn't mean it is finished. Tons of these
 - [x] `com.atproto.server.requestPasswordReset`
 - [x] `com.atproto.server.reserveSigningKey`
 - [x] `com.atproto.server.resetPassword`
-- ~~[] `com.atproto.server.revokeAppPassword`~~ - not going to add app passwords
+- [x] `com.atproto.server.revokeAppPassword`
 - [x] `com.atproto.server.updateEmail`
 
 ### Sync

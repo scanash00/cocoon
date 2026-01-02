@@ -511,6 +511,11 @@ func (s *Server) addRoutes() {
 	s.echo.POST("/xrpc/com.atproto.server.requestAccountDelete", s.handleServerRequestAccountDelete, s.handleLegacySessionMiddleware, s.handleOauthSessionMiddleware)
 	s.echo.POST("/xrpc/com.atproto.server.deleteAccount", s.handleServerDeleteAccount)
 
+	// app passwords
+	s.echo.POST("/xrpc/com.atproto.server.createAppPassword", s.handleCreateAppPassword, s.handleLegacySessionMiddleware, s.handleOauthSessionMiddleware)
+	s.echo.GET("/xrpc/com.atproto.server.listAppPasswords", s.handleListAppPasswords, s.handleLegacySessionMiddleware, s.handleOauthSessionMiddleware)
+	s.echo.POST("/xrpc/com.atproto.server.revokeAppPassword", s.handleRevokeAppPassword, s.handleLegacySessionMiddleware, s.handleOauthSessionMiddleware)
+
 	// repo
 	s.echo.GET("/xrpc/com.atproto.repo.listMissingBlobs", s.handleListMissingBlobs, s.handleLegacySessionMiddleware, s.handleOauthSessionMiddleware)
 	s.echo.POST("/xrpc/com.atproto.repo.createRecord", s.handleCreateRecord, s.handleLegacySessionMiddleware, s.handleOauthSessionMiddleware)
@@ -550,6 +555,7 @@ func (s *Server) Serve(ctx context.Context) error {
 		&models.Blob{},
 		&models.BlobPart{},
 		&models.ReservedKey{},
+		&models.AppPassword{},
 		&provider.OauthToken{},
 		&provider.OauthAuthorizationRequest{},
 	)

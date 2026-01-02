@@ -84,11 +84,21 @@ func (s *Server) handleCreateSession(e echo.Context) error {
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(repo.Password), []byte(req.Password)); err != nil {
-		if err != bcrypt.ErrMismatchedHashAndPassword {
-			s.logger.Error("erorr comparing hash and password", "error", err)
+		if err == bcrypt.ErrMismatchedHashAndPassword {
+			var appPasswords []models.AppPassword
+			if dbErr := s.db.Raw(ctx, "SELECT * FROM app_passwords WHERE did = ?", nil, repo.Repo.Did).Scan(&appPasswords).Error; dbErr == nil {
+				for _, ap := range appPasswords {
+					if bcrypt.CompareHashAndPassword([]byte(ap.Password), []byte(req.Password)) == nil {
+						goto passwordValid
+					}
+				}
+			}
+		} else {
+			s.logger.Error("error comparing hash and password", "error", err)
 		}
 		return helpers.InputError(e, to.StringPtr("InvalidRequest"))
 	}
+passwordValid:
 
 	sess, err := s.createSession(ctx, &repo.Repo)
 	if err != nil {
