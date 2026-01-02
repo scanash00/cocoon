@@ -33,6 +33,15 @@ func (s *Server) handleDescribeRepo(e echo.Context) error {
 		return helpers.ServerError(e, nil)
 	}
 
+	if status := repo.Status(); status != nil {
+		switch *status {
+		case "takendown":
+			return helpers.InputError(e, to.StringPtr("RepoTakendown"))
+		case "deactivated":
+			return helpers.InputError(e, to.StringPtr("RepoDeactivated"))
+		}
+	}
+
 	handleIsCorrect := true
 
 	diddoc, err := s.passport.FetchDoc(e.Request().Context(), repo.Repo.Did)

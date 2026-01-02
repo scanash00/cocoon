@@ -52,6 +52,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             type=raw,value=latest,enable={{is_default_branch}},suffix=-${{ matrix.arch }}
+            type=ref,event=branch,suffix=-${{ matrix.arch }}
             type=sha,suffix=-${{ matrix.arch }}
             type=sha,format=long,suffix=-${{ matrix.arch }}
             type=semver,pattern={{version}},suffix=-${{ matrix.arch }}
@@ -91,6 +92,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
+            type=ref,event=branch
             type=sha
             type=sha,format=long
             type=semver,pattern={{version}}

@@ -530,9 +530,14 @@ func (s *Server) addRoutes() {
 	s.echo.POST("/xrpc/app.bsky.actor.putPreferences", s.handleActorPutPreferences, s.handleLegacySessionMiddleware, s.handleOauthSessionMiddleware)
 	s.echo.GET("/xrpc/app.bsky.feed.getFeed", s.handleProxyBskyFeedGetFeed, s.handleLegacySessionMiddleware, s.handleOauthSessionMiddleware)
 
+	// moderation
+	s.echo.POST("/xrpc/com.atproto.moderation.createReport", s.handleModerationCreateReport, s.handleLegacySessionMiddleware, s.handleOauthSessionMiddleware)
+
 	// admin routes
 	s.echo.POST("/xrpc/com.atproto.server.createInviteCode", s.handleCreateInviteCode, s.handleAdminMiddleware)
 	s.echo.POST("/xrpc/com.atproto.server.createInviteCodes", s.handleCreateInviteCodes, s.handleAdminMiddleware)
+	s.echo.POST("/xrpc/com.atproto.server.takedownAccount", s.handleServerTakedownAccount, s.handleAdminMiddleware)
+	s.echo.POST("/xrpc/com.atproto.server.untakedownAccount", s.handleServerUntakedownAccount, s.handleAdminMiddleware)
 
 	// are there any routes that we should be allowing without auth? i dont think so but idk
 	s.echo.GET("/xrpc/*", s.handleProxy, s.handleLegacySessionMiddleware, s.handleOauthSessionMiddleware)

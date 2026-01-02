@@ -17,6 +17,7 @@ type ComAtprotoServerCreateSessionRequest struct {
 	Identifier      string  `json:"identifier" validate:"required"`
 	Password        string  `json:"password" validate:"required"`
 	AuthFactorToken *string `json:"authFactorToken,omitempty"`
+	AllowTakendown  *bool   `json:"allowTakendown,omitempty"`
 }
 
 type ComAtprotoServerCreateSessionResponse struct {

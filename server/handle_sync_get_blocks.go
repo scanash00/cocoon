@@ -40,6 +40,18 @@ func (s *Server) handleGetBlocks(e echo.Context) error {
 		return helpers.ServerError(e, nil)
 	}
 
+	status := urepo.Status()
+	if status != nil {
+		switch *status {
+		case "takendown":
+			msg := "RepoTakendown"
+			return helpers.InputError(e, &msg)
+		case "deactivated":
+			msg := "RepoDeactivated"
+			return helpers.InputError(e, &msg)
+		}
+	}
+
 	buf := new(bytes.Buffer)
 	rc, err := cid.Cast(urepo.Root)
 	if err != nil {

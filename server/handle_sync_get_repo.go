@@ -3,6 +3,7 @@ package server
 import (
 	"bytes"
 
+	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/bluesky-social/indigo/carstore"
 	"github.com/haileyok/cocoon/internal/helpers"
 	"github.com/haileyok/cocoon/models"
@@ -23,6 +24,16 @@ func (s *Server) handleSyncGetRepo(e echo.Context) error {
 	urepo, err := s.getRepoActorByDid(ctx, did)
 	if err != nil {
 		return err
+	}
+
+	status := urepo.Status()
+	if status != nil {
+		switch *status {
+		case "takendown":
+			return helpers.InputError(e, to.StringPtr("RepoTakendown"))
+		case "deactivated":
+			return helpers.InputError(e, to.StringPtr("RepoDeactivated"))
+		}
 	}
 
 	rc, err := cid.Cast(urepo.Root)

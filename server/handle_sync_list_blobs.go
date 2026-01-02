@@ -45,7 +45,10 @@ func (s *Server) handleSyncListBlobs(e echo.Context) error {
 
 	status := urepo.Status()
 	if status != nil {
-		if *status == "deactivated" {
+		switch *status {
+		case "takendown":
+			return helpers.InputError(e, to.StringPtr("RepoTakendown"))
+		case "deactivated":
 			return helpers.InputError(e, to.StringPtr("RepoDeactivated"))
 		}
 	}

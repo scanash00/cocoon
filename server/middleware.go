@@ -162,7 +162,7 @@ func (s *Server) handleLegacySessionMiddleware(next echo.HandlerFunc) echo.Handl
 
 		if isRefresh && scope != "com.atproto.refresh" {
 			return helpers.InvalidTokenError(e)
-		} else if !hasLxm && !isRefresh && scope != "com.atproto.access" {
+		} else if !hasLxm && !isRefresh && scope != "com.atproto.access" && scope != "com.atproto.takendown" {
 			return helpers.InvalidTokenError(e)
 		}
 
@@ -208,6 +208,29 @@ func (s *Server) handleLegacySessionMiddleware(next echo.HandlerFunc) echo.Handl
 			}
 			repo = maybeRepo
 			did = repo.Repo.Did
+		}
+
+		if status := repo.Status(); status != nil {
+			switch *status {
+			case "takendown":
+				allowed := map[string]bool{
+					"/xrpc/com.atproto.server.getSession":     true,
+					"/xrpc/com.atproto.server.refreshSession": true,
+					"/xrpc/com.atproto.server.deleteSession":  true,
+					"/xrpc/com.atproto.moderation.createReport": true,
+				}
+
+				if scope != "com.atproto.takendown" && !(isRefresh && scope == "com.atproto.refresh") {
+					return helpers.AuthRequiredError(e, "AccountTakedown", "Account has been taken down")
+				}
+				if !allowed[e.Request().URL.Path] {
+					return helpers.AuthRequiredError(e, "AccountTakedown", "Account has been taken down")
+				}
+			case "deactivated":
+				if e.Request().URL.Path != "/xrpc/com.atproto.server.activateAccount" {
+					return helpers.InputError(e, to.StringPtr("RepoDeactivated"))
+				}
+			}
 		}
 
 		e.Set("repo", repo)
@@ -289,6 +312,17 @@ func (s *Server) handleOauthSessionMiddleware(next echo.HandlerFunc) echo.Handle
 		if err != nil {
 			s.logger.Error("could not find actor in db", "error", err)
 			return helpers.ServerError(e, nil)
+		}
+
+		if status := repo.Status(); status != nil {
+			switch *status {
+			case "takendown":
+				return helpers.AuthRequiredError(e, "AccountTakedown", "Account has been taken down")
+			case "deactivated":
+				if e.Request().URL.Path != "/xrpc/com.atproto.server.activateAccount" {
+					return helpers.InputError(e, to.StringPtr("RepoDeactivated"))
+				}
+			}
 		}
 
 		e.Set("repo", repo)

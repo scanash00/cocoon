@@ -48,6 +48,13 @@ func ForbiddenError(e echo.Context, suffix *string) error {
 	return genericError(e, 403, msg)
 }
 
+func AuthRequiredError(e echo.Context, errcode string, message string) error {
+	return e.JSON(401, map[string]string{
+		"error":   errcode,
+		"message": message,
+	})
+}
+
 func InvalidTokenError(e echo.Context) error {
 	return InputError(e, to.StringPtr("InvalidToken"))
 }

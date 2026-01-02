@@ -28,6 +28,9 @@ type Repo struct {
 	Rev                            string
 	Root                           []byte
 	Preferences                    []byte
+	Takendown                      bool
+	TakedownComment                *string `gorm:"column:takedown_reason"`
+	TakedownExpiresAt              *time.Time `gorm:"column:takedown_expires_at"`
 	Deactivated                    bool
 }
 
@@ -49,6 +52,9 @@ func (r *Repo) Status() *string {
 	var status *string
 	if r.Deactivated {
 		status = to.StringPtr("deactivated")
+	}
+	if r.Takendown {
+		status = to.StringPtr("takendown")
 	}
 	return status
 }
