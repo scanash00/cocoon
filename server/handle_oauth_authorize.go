@@ -58,7 +58,7 @@ func (s *Server) handleOauthAuthorizeGet(e echo.Context) error {
 	appName := client.Metadata.ClientName
 
 	data := map[string]any{
-		"Scopes":      scopes,
+		"Scopes":      s.groupScopes(scopes),
 		"AppName":     appName,
 		"AppLogo":     client.Metadata.LogoURI,
 		"RequestUri":  reqUri,
