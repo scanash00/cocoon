@@ -53,32 +53,15 @@ func (s *Server) handleSyncGetBlob(e echo.Context) error {
 		return helpers.ServerError(e, nil)
 	}
 
-	e.Response().Header().Set(echo.HeaderContentDisposition, "attachment; filename="+c.String())
-	e.Response().Header().Set(echo.HeaderContentType, "application/octet-stream")
-	e.Response().WriteHeader(200)
+	if blob.ID == 0 {
+		s.logger.Error("blob not found", "did", did, "cid", cstr)
+		return helpers.InputError(e, to.StringPtr("BlobNotFound"))
+	}
 
-	if blob.Storage == "sqlite" {
-		rows, err := s.db.Raw(ctx, "SELECT data FROM blob_parts WHERE blob_id = ? ORDER BY idx", nil, blob.ID).Rows()
-		if err != nil {
-			s.logger.Error("error getting blob parts", "error", err)
-			return nil // Response already sent
-		}
-		defer rows.Close()
-
-		var data []byte
-		for rows.Next() {
-			if err := rows.Scan(&data); err != nil {
-				s.logger.Error("error scanning blob part", "error", err)
-				continue
-			}
-			if _, err := e.Response().Write(data); err != nil {
-				return nil
-			}
-		}
-	} else if blob.Storage == "s3" {
+	if blob.Storage == "s3" {
 		if !(s.s3Config != nil && s.s3Config.BlobstoreEnabled) {
-			s.logger.Error("s3 storage disabled")
-			return nil
+			s.logger.Error("s3 storage disabled but blob references s3")
+			return helpers.ServerError(e, nil)
 		}
 
 		blobKey := fmt.Sprintf("blobs/%s/%s", urepo.Repo.Did, c.String())
@@ -101,7 +84,7 @@ func (s *Server) handleSyncGetBlob(e echo.Context) error {
 		sess, err := session.NewSession(config)
 		if err != nil {
 			s.logger.Error("error creating aws session", "error", err)
-			return nil
+			return helpers.ServerError(e, nil)
 		}
 
 		svc := s3.New(sess)
@@ -111,18 +94,46 @@ func (s *Server) handleSyncGetBlob(e echo.Context) error {
 		})
 		if err != nil {
 			s.logger.Error("error getting blob from s3", "error", err)
-			return nil
+			return helpers.ServerError(e, nil)
 		}
 		defer result.Body.Close()
+
+		e.Response().Header().Set(echo.HeaderContentDisposition, "attachment; filename="+c.String())
+		e.Response().Header().Set(echo.HeaderContentType, "application/octet-stream")
+		e.Response().WriteHeader(200)
 
 		if _, err := io.Copy(e.Response().Writer, result.Body); err != nil {
 			s.logger.Error("error streaming blob from s3", "error", err)
 			return nil
 		}
-	} else {
-		s.logger.Error("unknown storage", "storage", blob.Storage)
 		return nil
 	}
 
-	return nil
+	if blob.Storage == "sqlite" {
+		rows, err := s.db.Raw(ctx, "SELECT data FROM blob_parts WHERE blob_id = ? ORDER BY idx", nil, blob.ID).Rows()
+		if err != nil {
+			s.logger.Error("error getting blob parts", "error", err)
+			return helpers.ServerError(e, nil)
+		}
+		defer rows.Close()
+
+		e.Response().Header().Set(echo.HeaderContentDisposition, "attachment; filename="+c.String())
+		e.Response().Header().Set(echo.HeaderContentType, "application/octet-stream")
+		e.Response().WriteHeader(200)
+
+		var data []byte
+		for rows.Next() {
+			if err := rows.Scan(&data); err != nil {
+				s.logger.Error("error scanning blob part", "error", err)
+				continue
+			}
+			if _, err := e.Response().Write(data); err != nil {
+				return nil
+			}
+		}
+		return nil
+	}
+
+	s.logger.Error("unknown storage type", "storage", blob.Storage)
+	return helpers.ServerError(e, nil)
 }
