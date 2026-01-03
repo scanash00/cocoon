@@ -5,7 +5,6 @@ import (
 
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/haileyok/cocoon/internal/helpers"
-	"github.com/haileyok/cocoon/models"
 	"github.com/labstack/echo/v4"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -19,7 +18,10 @@ func (s *Server) handleServerResetPassword(e echo.Context) error {
 	ctx := e.Request().Context()
 	logger := s.logger.With("name", "handleServerResetPassword")
 
-	urepo := e.Get("repo").(*models.RepoActor)
+	urepo, ok := getRepoFromContext(e)
+	if !ok {
+		return echo.NewHTTPError(401, "Unauthorized")
+	}
 
 	var req ComAtprotoServerResetPasswordRequest
 	if err := e.Bind(&req); err != nil {

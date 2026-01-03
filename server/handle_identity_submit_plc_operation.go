@@ -11,7 +11,6 @@ import (
 	"github.com/bluesky-social/indigo/util"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/haileyok/cocoon/internal/helpers"
-	"github.com/haileyok/cocoon/models"
 	"github.com/haileyok/cocoon/plc"
 	"github.com/labstack/echo/v4"
 )
@@ -23,7 +22,10 @@ type ComAtprotoSubmitPlcOperationRequest struct {
 func (s *Server) handleSubmitPlcOperation(e echo.Context) error {
 	logger := s.logger.With("name", "handleIdentitySubmitPlcOperation")
 
-	repo := e.Get("repo").(*models.RepoActor)
+	repo, ok := getRepoFromContext(e)
+	if !ok {
+		return echo.NewHTTPError(401, "Unauthorized")
+	}
 
 	var req ComAtprotoSubmitPlcOperationRequest
 	if err := e.Bind(&req); err != nil {

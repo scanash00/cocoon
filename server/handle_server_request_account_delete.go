@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/haileyok/cocoon/internal/helpers"
-	"github.com/haileyok/cocoon/models"
 	"github.com/labstack/echo/v4"
 )
 
@@ -13,7 +12,10 @@ func (s *Server) handleServerRequestAccountDelete(e echo.Context) error {
 	ctx := e.Request().Context()
 	logger := s.logger.With("name", "handleServerRequestAccountDelete")
 
-	urepo := e.Get("repo").(*models.RepoActor)
+	urepo, ok := getRepoFromContext(e)
+	if !ok {
+		return echo.NewHTTPError(401, "Unauthorized")
+	}
 
 	token := fmt.Sprintf("%s-%s", helpers.RandomVarchar(5), helpers.RandomVarchar(5))
 	expiresAt := time.Now().UTC().Add(15 * time.Minute)

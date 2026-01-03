@@ -3,14 +3,16 @@ package server
 import (
 	"github.com/bluesky-social/indigo/atproto/atcrypto"
 	"github.com/haileyok/cocoon/internal/helpers"
-	"github.com/haileyok/cocoon/models"
 	"github.com/labstack/echo/v4"
 )
 
 func (s *Server) handleGetRecommendedDidCredentials(e echo.Context) error {
 	logger := s.logger.With("name", "handleIdentityGetRecommendedDidCredentials")
 
-	repo := e.Get("repo").(*models.RepoActor)
+	repo, ok := getRepoFromContext(e)
+	if !ok {
+		return echo.NewHTTPError(401, "Unauthorized")
+	}
 	k, err := atcrypto.ParsePrivateBytesK256(repo.SigningKey)
 	if err != nil {
 		logger.Error("error parsing key", "error", err)

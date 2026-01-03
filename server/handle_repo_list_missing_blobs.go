@@ -25,7 +25,10 @@ func (s *Server) handleListMissingBlobs(e echo.Context) error {
 	ctx := e.Request().Context()
 	logger := s.logger.With("name", "handleListMissingBlos")
 
-	urepo := e.Get("repo").(*models.RepoActor)
+	urepo, ok := getRepoFromContext(e)
+	if !ok {
+		return echo.NewHTTPError(401, "Unauthorized")
+	}
 
 	limitStr := e.QueryParam("limit")
 	cursor := e.QueryParam("cursor")

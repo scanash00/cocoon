@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/haileyok/cocoon/internal/helpers"
-	"github.com/haileyok/cocoon/models"
 	"github.com/labstack/echo/v4"
 )
 
@@ -17,7 +16,10 @@ func (s *Server) handleServerRequestEmailUpdate(e echo.Context) error {
 	ctx := e.Request().Context()
 	logger := s.logger.With("name", "handleServerRequestEmailUpdate")
 
-	urepo := e.Get("repo").(*models.RepoActor)
+	urepo, ok := getRepoFromContext(e)
+	if !ok {
+		return echo.NewHTTPError(401, "Unauthorized")
+	}
 
 	if urepo.EmailConfirmedAt != nil {
 		code := fmt.Sprintf("%s-%s", helpers.RandomVarchar(5), helpers.RandomVarchar(5))

@@ -3,7 +3,6 @@ package server
 import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/haileyok/cocoon/internal/helpers"
-	"github.com/haileyok/cocoon/models"
 	"github.com/labstack/echo/v4"
 )
 
@@ -19,7 +18,10 @@ type ComAtprotoRepoCreateRecordInput struct {
 func (s *Server) handleCreateRecord(e echo.Context) error {
 	ctx := e.Request().Context()
 
-	repo := e.Get("repo").(*models.RepoActor)
+	repo, ok := getRepoFromContext(e)
+	if !ok {
+		return echo.NewHTTPError(401, "Unauthorized")
+	}
 
 	var req ComAtprotoRepoCreateRecordInput
 	if err := e.Bind(&req); err != nil {

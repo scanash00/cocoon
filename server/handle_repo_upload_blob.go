@@ -35,7 +35,10 @@ func (s *Server) handleRepoUploadBlob(e echo.Context) error {
 	ctx := e.Request().Context()
 	logger := s.logger.With("name", "handleRepoUploadBlob")
 
-	urepo := e.Get("repo").(*models.RepoActor)
+	urepo, ok := getRepoFromContext(e)
+	if !ok {
+		return echo.NewHTTPError(401, "Unauthorized")
+	}
 
 	mime := e.Request().Header.Get("content-type")
 	if mime == "" {

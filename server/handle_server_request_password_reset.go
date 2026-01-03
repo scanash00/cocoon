@@ -6,7 +6,6 @@ import (
 
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/haileyok/cocoon/internal/helpers"
-	"github.com/haileyok/cocoon/models"
 	"github.com/labstack/echo/v4"
 )
 
@@ -18,7 +17,7 @@ func (s *Server) handleServerRequestPasswordReset(e echo.Context) error {
 	ctx := e.Request().Context()
 	logger := s.logger.With("name", "handleServerRequestPasswordReset")
 
-	urepo, ok := e.Get("repo").(*models.RepoActor)
+	urepo, ok := getRepoFromContext(e)
 	if !ok {
 		var req ComAtprotoServerRequestPasswordResetRequest
 		if err := e.Bind(&req); err != nil {

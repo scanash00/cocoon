@@ -3,7 +3,6 @@ package server
 import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/haileyok/cocoon/internal/helpers"
-	"github.com/haileyok/cocoon/models"
 	"github.com/labstack/echo/v4"
 )
 
@@ -40,7 +39,10 @@ func (s *Server) handleApplyWrites(e echo.Context) error {
 		return helpers.InputError(e, to.StringPtr("InvalidRequest"))
 	}
 
-	repo := e.Get("repo").(*models.RepoActor)
+	repo, ok := getRepoFromContext(e)
+	if !ok {
+		return echo.NewHTTPError(401, "Unauthorized")
+	}
 
 	if repo.Repo.Did != req.Repo {
 		s.logger.Warn("mismatched repo/auth")

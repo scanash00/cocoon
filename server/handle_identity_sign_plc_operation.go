@@ -9,7 +9,6 @@ import (
 	"github.com/bluesky-social/indigo/atproto/atcrypto"
 	"github.com/haileyok/cocoon/identity"
 	"github.com/haileyok/cocoon/internal/helpers"
-	"github.com/haileyok/cocoon/models"
 	"github.com/haileyok/cocoon/plc"
 	"github.com/labstack/echo/v4"
 )
@@ -29,7 +28,10 @@ type ComAtprotoSignPlcOperationResponse struct {
 func (s *Server) handleSignPlcOperation(e echo.Context) error {
 	logger := s.logger.With("name", "handleSignPlcOperation")
 
-	repo := e.Get("repo").(*models.RepoActor)
+	repo, ok := getRepoFromContext(e)
+	if !ok {
+		return echo.NewHTTPError(401, "Unauthorized")
+	}
 
 	var req ComAtprotoSignPlcOperationRequest
 	if err := e.Bind(&req); err != nil {

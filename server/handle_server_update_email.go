@@ -6,7 +6,6 @@ import (
 
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/haileyok/cocoon/internal/helpers"
-	"github.com/haileyok/cocoon/models"
 	"github.com/labstack/echo/v4"
 )
 
@@ -20,7 +19,10 @@ func (s *Server) handleServerUpdateEmail(e echo.Context) error {
 	ctx := e.Request().Context()
 	logger := s.logger.With("name", "handleServerUpdateEmail")
 
-	urepo := e.Get("repo").(*models.RepoActor)
+	urepo, ok := getRepoFromContext(e)
+	if !ok {
+		return echo.NewHTTPError(401, "Unauthorized")
+	}
 
 	var req ComAtprotoServerUpdateEmailRequest
 	if err := e.Bind(&req); err != nil {

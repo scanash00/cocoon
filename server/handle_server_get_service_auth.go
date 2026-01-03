@@ -12,7 +12,6 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/google/uuid"
 	"github.com/haileyok/cocoon/internal/helpers"
-	"github.com/haileyok/cocoon/models"
 	"github.com/labstack/echo/v4"
 	secp256k1secec "gitlab.com/yawning/secp256k1-voi/secec"
 )
@@ -57,7 +56,10 @@ func (s *Server) handleServerGetServiceAuth(e echo.Context) error {
 		return helpers.InputError(e, to.StringPtr("expiration too big. smoller please"))
 	}
 
-	repo := e.Get("repo").(*models.RepoActor)
+	repo, ok := getRepoFromContext(e)
+	if !ok {
+		return echo.NewHTTPError(401, "Unauthorized")
+	}
 
 	header := map[string]string{
 		"alg": "ES256K",

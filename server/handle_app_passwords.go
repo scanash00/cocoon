@@ -34,7 +34,7 @@ func generateAppPassword() string {
 func (s *Server) handleCreateAppPassword(e echo.Context) error {
 	ctx := e.Request().Context()
 
-	repo, ok := e.Get("repo").(*models.RepoActor)
+	repo, ok := getRepoFromContext(e)
 	if !ok {
 		return helpers.UnauthorizedError(e, to.StringPtr("AuthMissing"))
 	}
@@ -100,7 +100,7 @@ type ComAtprotoServerListAppPasswordsResponse struct {
 func (s *Server) handleListAppPasswords(e echo.Context) error {
 	ctx := e.Request().Context()
 
-	repo, ok := e.Get("repo").(*models.RepoActor)
+	repo, ok := getRepoFromContext(e)
 	if !ok {
 		return helpers.UnauthorizedError(e, to.StringPtr("AuthMissing"))
 	}
@@ -132,7 +132,7 @@ type ComAtprotoServerRevokeAppPasswordRequest struct {
 func (s *Server) handleRevokeAppPassword(e echo.Context) error {
 	ctx := e.Request().Context()
 
-	repo, ok := e.Get("repo").(*models.RepoActor)
+	repo, ok := getRepoFromContext(e)
 	if !ok {
 		return helpers.UnauthorizedError(e, to.StringPtr("AuthMissing"))
 	}

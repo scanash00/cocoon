@@ -2,7 +2,6 @@ package server
 
 import (
 	"github.com/haileyok/cocoon/internal/helpers"
-	"github.com/haileyok/cocoon/models"
 	"github.com/ipfs/go-cid"
 	"github.com/labstack/echo/v4"
 )
@@ -22,7 +21,10 @@ type ComAtprotoServerCheckAccountStatusResponse struct {
 func (s *Server) handleServerCheckAccountStatus(e echo.Context) error {
 	ctx := e.Request().Context()
 
-	urepo := e.Get("repo").(*models.RepoActor)
+	urepo, ok := getRepoFromContext(e)
+	if !ok {
+		return echo.NewHTTPError(401, "Unauthorized")
+	}
 
 	resp := ComAtprotoServerCheckAccountStatusResponse{
 		Activated:     !urepo.Deactivated,

@@ -12,7 +12,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/haileyok/cocoon/internal/helpers"
-	"github.com/haileyok/cocoon/models"
 	"github.com/labstack/echo/v4"
 	secp256k1secec "gitlab.com/yawning/secp256k1-voi/secec"
 )
@@ -49,7 +48,7 @@ func (s *Server) getAtprotoProxyEndpointFromRequest(e echo.Context) (string, str
 func (s *Server) handleProxy(e echo.Context) error {
 	logger := s.logger.With("handler", "handleProxy")
 
-	repo, isAuthed := e.Get("repo").(*models.RepoActor)
+	repo, isAuthed := getRepoFromContext(e)
 
 	pts := strings.Split(e.Request().URL.Path, "/")
 	if len(pts) != 3 {
