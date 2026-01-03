@@ -275,6 +275,8 @@ button.primary {
 button[type="submit"]:hover,
 button.primary:hover {
   background-color: var(--accent-primary-hover);
+  color: white;
+  text-decoration: none;
 }
 
 .btn-secondary,
