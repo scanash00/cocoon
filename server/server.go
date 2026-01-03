@@ -801,3 +801,12 @@ func (s *Server) nextSeq(ctx context.Context) int64 {
 
 	return result.Seq
 }
+
+func getRepoFromContext(e echo.Context) (*models.RepoActor, bool) {
+	val := e.Get("repo")
+	if val == nil {
+		return nil, false
+	}
+	repo, ok := val.(*models.RepoActor)
+	return repo, ok
+}

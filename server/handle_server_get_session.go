@@ -1,7 +1,6 @@
 package server
 
 import (
-	"github.com/haileyok/cocoon/models"
 	"github.com/labstack/echo/v4"
 )
 
@@ -16,7 +15,10 @@ type ComAtprotoServerGetSessionResponse struct {
 }
 
 func (s *Server) handleGetSession(e echo.Context) error {
-	repo := e.Get("repo").(*models.RepoActor)
+	repo, ok := getRepoFromContext(e)
+	if !ok {
+		return echo.NewHTTPError(401, "Unauthorized")
+	}
 
 	return e.JSON(200, ComAtprotoServerGetSessionResponse{
 		Handle:          repo.Handle,

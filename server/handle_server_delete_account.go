@@ -75,7 +75,7 @@ func (s *Server) handleServerDeleteAccount(e echo.Context) error {
 	}
 
 	status := "error"
-	func() {
+	defer func() {
 		if status == "error" {
 			if err := tx.Rollback().Error; err != nil {
 				logger.Error("error rolling back after delete failure", "err", err)

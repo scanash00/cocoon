@@ -20,7 +20,10 @@ func (s *Server) handleRepoImportRepo(e echo.Context) error {
 	ctx := e.Request().Context()
 	logger := s.logger.With("name", "handleImportRepo")
 
-	urepo := e.Get("repo").(*models.RepoActor)
+	urepo, ok := getRepoFromContext(e)
+	if !ok {
+		return echo.NewHTTPError(401, "Unauthorized")
+	}
 	bs := s.getBlockstore(urepo.Repo.Did)
 
 	cs, err := car.NewCarReader(e.Request().Body)
