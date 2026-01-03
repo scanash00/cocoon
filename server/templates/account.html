@@ -34,50 +34,112 @@
 
     <div class="divider"></div>
 
-    <div class="section">
+    <div class="section" style="margin-bottom: 2rem;">
       <h3>Connected Applications</h3>
       <p class="text-small text-muted">Apps that have access to your account.</p>
+
+      <div style="margin-top: 1rem;">
+        <input type="text" id="searchInput" placeholder="Search sessions (app name, IP, etc)..." style="width: 100%;">
+      </div>
     </div>
 
-    {{ if eq (len .Tokens) 0 }}
+    {{ if eq (len .ClientGroups) 0 }}
     <div class="empty-state">
       <i data-lucide="check-circle" class="empty-state-icon"></i>
       <h3>No active sessions</h3>
       <p>You don't have any connected applications.</p>
     </div>
     {{ else }}
-    {{ range .Tokens }}
-    <div class="panel">
-      <div class="panel-header">
-        <h4>{{ .ClientName }}</h4>
-        <form action="/account/revoke" method="post" style="margin: 0;">
-          <input type="hidden" name="token" value="{{ .Token }}" />
-          <button type="submit" class="btn-ghost btn-sm">Revoke</button>
-        </form>
+
+    <div id="groupsContainer">
+      {{ range .ClientGroups }}
+      <div class="client-group">
+        <h3 class="group-header"
+          style="margin-top: 1.5rem; margin-bottom: 1rem; color: var(--text-primary); font-size: 1.125rem;">
+          {{ .Name }} <span
+            style="color: var(--text-muted); font-weight: normal; font-size: 0.875rem; margin-left: 0.5rem;">({{ len
+            .Sessions }} sessions)</span>
+        </h3>
+
+        <div class="group-sessions">
+          {{ range .Sessions }}
+          <div class="panel">
+            <div class="panel-header">
+              <!-- Display ClientName repeated or maybe just ID? Keeping Name for clarity -->
+              <h4 style="font-size: 1rem;">{{ .ClientName }}</h4>
+              <form action="/account/revoke" method="post" style="margin: 0;">
+                <input type="hidden" name="token" value="{{ .Token }}" />
+                <button type="submit" class="btn-ghost btn-sm">Revoke</button>
+              </form>
+            </div>
+            <div class="panel-content">
+              <div class="panel-row">
+                <span class="label">Session Age</span>
+                <span class="value">{{ .Age }}</span>
+              </div>
+              <div class="panel-row">
+                <span class="label">Last Updated</span>
+                <span class="value">{{ .LastUpdated }} ago</span>
+              </div>
+              <div class="panel-row">
+                <span class="label">Expires In</span>
+                <span class="value">{{ .ExpiresIn }}</span>
+              </div>
+              <div class="panel-row">
+                <span class="label">IP Address</span>
+                <span class="value">{{ .Ip }}</span>
+              </div>
+            </div>
+          </div>
+          {{ end }}
+        </div>
       </div>
-      <div class="panel-content">
-        <div class="panel-row">
-          <span class="label">Session Age</span>
-          <span class="value">{{ .Age }}</span>
-        </div>
-        <div class="panel-row">
-          <span class="label">Last Updated</span>
-          <span class="value">{{ .LastUpdated }} ago</span>
-        </div>
-        <div class="panel-row">
-          <span class="label">Expires In</span>
-          <span class="value">{{ .ExpiresIn }}</span>
-        </div>
-        <div class="panel-row">
-          <span class="label">IP Address</span>
-          <span class="value">{{ .Ip }}</span>
-        </div>
-      </div>
+      {{ end }}
+    </div>
+
+    <div id="noResults" class="empty-state" style="display: none;">
+      <i data-lucide="search" class="empty-state-icon"></i>
+      <h3>No matches found</h3>
+      <p>Try searching for a different term.</p>
     </div>
     {{ end }}
-    {{ end }}
   </main>
-  <script>lucide.createIcons();</script>
+
+  <script>
+    lucide.createIcons();
+
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+      searchInput.addEventListener('input', (e) => {
+        const term = e.target.value.toLowerCase().trim();
+        const groups = document.querySelectorAll('.client-group');
+        let totalVisible = 0;
+
+        groups.forEach(group => {
+          let groupHasVisible = false;
+          const panels = group.querySelectorAll('.panel');
+
+          panels.forEach(panel => {
+            const text = panel.textContent.toLowerCase();
+            if (text.includes(term)) {
+              panel.style.display = 'block';
+              groupHasVisible = true;
+              totalVisible++;
+            } else {
+              panel.style.display = 'none';
+            }
+          });
+
+          group.style.display = groupHasVisible ? 'block' : 'none';
+        });
+
+        const noResults = document.getElementById('noResults');
+        if (noResults) {
+          noResults.style.display = (totalVisible === 0 && term !== '') ? 'block' : 'none';
+        }
+      });
+    }
+  </script>
 </body>
 
 </html>

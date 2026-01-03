@@ -70,9 +70,24 @@ func (s *Server) handleAccount(e echo.Context) error {
 	}
 	wg.Wait()
 
+	type Session struct {
+		ClientName  string
+		Age         string
+		LastUpdated string
+		ExpiresIn   string
+		Token       string
+		Ip          string
+	}
+
+	type ClientGroup struct {
+		Name     string
+		Sessions []Session
+	}
+	
 	now := time.Now()
 
-	tokenInfo := []map[string]string{}
+	groupsMap := make(map[string][]Session)
+
 	// Use filtered tokens only
 	for _, t := range filtered {
 		ageRes := oauth.GetSessionAgeFromToken(t)
@@ -86,19 +101,30 @@ func (s *Server) handleAccount(e echo.Context) error {
 			clientName = name
 		}
 
-		tokenInfo = append(tokenInfo, map[string]string{
-			"ClientName":  clientName,
-			"Age":         durafmt.Parse(ageRes.SessionAge).LimitFirstN(2).String(),
-			"LastUpdated": durafmt.Parse(now.Sub(t.UpdatedAt)).LimitFirstN(2).String(),
-			"ExpiresIn":   durafmt.Parse(now.Add(maxTime).Sub(now)).LimitFirstN(2).String(),
-			"Token":       t.Token,
-			"Ip":          t.Ip,
+		session := Session{
+			ClientName:  clientName,
+			Age:         durafmt.Parse(ageRes.SessionAge).LimitFirstN(2).String(),
+			LastUpdated: durafmt.Parse(now.Sub(t.UpdatedAt)).LimitFirstN(2).String(),
+			ExpiresIn:   durafmt.Parse(now.Add(maxTime).Sub(now)).LimitFirstN(2).String(),
+			Token:       t.Token,
+			Ip:          t.Ip,
+		}
+
+		groupsMap[clientName] = append(groupsMap[clientName], session)
+	}
+
+	var clientGroups []ClientGroup
+	for name, sessions := range groupsMap {
+		clientGroups = append(clientGroups, ClientGroup{
+			Name:     name,
+			Sessions: sessions,
 		})
 	}
 
+
 	return e.Render(200, "account.html", map[string]any{
-		"Repo":    repo,
-		"Tokens":  tokenInfo,
-		"flashes": getFlashesFromSession(e, sess),
+		"Repo":         repo,
+		"ClientGroups": clientGroups,
+		"flashes":      getFlashesFromSession(e, sess),
 	})
 }
