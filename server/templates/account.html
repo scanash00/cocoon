@@ -63,7 +63,8 @@
           </h3>
           <form action="/account/revoke" method="post" style="margin: 0;">
             <input type="hidden" name="client_id" value="{{ .ID }}" />
-            <button type="submit" class="btn btn-sm btn-ghost" style="color: var(--danger);"
+            <button type="submit" class="btn btn-sm btn-ghost"
+              style="color: var(--danger); background-color: transparent;"
               onclick="return confirm('Are you sure you want to revoke all sessions for {{ .Name }}?');">Revoke
               All</button>
           </form>
@@ -73,7 +74,6 @@
           {{ range .Sessions }}
           <div class="panel">
             <div class="panel-header">
-              <!-- Display ClientName repeated or maybe just ID? Keeping Name for clarity -->
               <h4 style="font-size: 1rem;">{{ .ClientName }}</h4>
               <form action="/account/revoke" method="post" style="margin: 0;">
                 <input type="hidden" name="token" value="{{ .Token }}" />
