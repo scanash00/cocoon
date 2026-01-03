@@ -98,14 +98,16 @@ func (s *Server) handleOauthAuthorizePost(e echo.Context) error {
 		return helpers.ServerError(e, to.StringPtr(err.Error()))
 	}
 
-	client, err := s.oauthProvider.ClientManager.GetClient(e.Request().Context(), authReq.ClientId)
-	if err != nil {
+	if _, err := s.oauthProvider.ClientManager.GetClient(e.Request().Context(), authReq.ClientId); err != nil {
 		return helpers.ServerError(e, to.StringPtr(err.Error()))
 	}
 
-	// TODO: figure out how im supposed to actually redirect
 	if req.AcceptOrRejct == "reject" {
-		return e.Redirect(303, client.Metadata.ClientURI)
+		q := url.Values{}
+		q.Set("error", "access_denied")
+		q.Set("error_description", "The user denied the authorization request")
+		q.Set("state", authReq.Parameters.State)
+		return e.Redirect(303, authReq.Parameters.RedirectURI+"?"+q.Encode())
 	}
 
 	if time.Now().After(authReq.ExpiresAt) {

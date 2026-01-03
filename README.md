@@ -203,8 +203,8 @@ Tracking error handling, validation, and proper ATProto error codes. Items marke
 - [x] `com.atproto.identity.requestPlcOperationSignature`
 - [x] `com.atproto.identity.resolveHandle`
 - [x] `com.atproto.identity.signPlcOperation`
-- [ ] `com.atproto.identity.submitPlcOperation`
-- [ ] `com.atproto.identity.updateHandle`
+- [x] `com.atproto.identity.submitPlcOperation`
+- [x] `com.atproto.identity.updateHandle`
 
 #### Repo
 - [x] `com.atproto.repo.applyWrites`
@@ -213,21 +213,21 @@ Tracking error handling, validation, and proper ATProto error codes. Items marke
 - [x] `com.atproto.repo.deleteRecord`
 - [x] `com.atproto.repo.describeRepo`
 - [x] `com.atproto.repo.getRecord`
-- [ ] `com.atproto.repo.importRepo`
+- [x] `com.atproto.repo.importRepo`
 - [x] `com.atproto.repo.listRecords`
 - [x] `com.atproto.repo.listMissingBlobs`
 - [x] `com.atproto.repo.uploadBlob`
 
 #### Server
-- [ ] `com.atproto.server.activateAccount`
+- [x] `com.atproto.server.activateAccount`
 - [x] `com.atproto.server.checkAccountStatus`
 - [x] `com.atproto.server.confirmEmail`
-- [ ] `com.atproto.server.createAccount`
+- [x] `com.atproto.server.createAccount`
 - [x] `com.atproto.server.createAppPassword`
 - [x] `com.atproto.server.createInviteCode`
 - [x] `com.atproto.server.createInviteCodes`
 - [x] `com.atproto.server.createSession`
-- [ ] `com.atproto.server.deactivateAccount`
+- [x] `com.atproto.server.deactivateAccount`
 - [x] `com.atproto.server.deleteAccount`
 - [x] `com.atproto.server.deleteSession`
 - [x] `com.atproto.server.describeServer`

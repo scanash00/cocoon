@@ -70,8 +70,7 @@ func (s *Server) handleOauthToken(e echo.Context) error {
 		return helpers.InputError(e, to.StringPtr(err.Error()))
 	}
 
-	// TODO: this should come from an oauth provier config
-	if !slices.Contains([]string{"authorization_code", "refresh_token"}, req.GrantType) {
+	if !slices.Contains(s.oauthProvider.SupportedGrantTypes, req.GrantType) {
 		return helpers.InputError(e, to.StringPtr(fmt.Sprintf(`"%s" grant type is not supported by the server`, req.GrantType)))
 	}
 

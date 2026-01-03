@@ -1,10 +1,8 @@
 package server
 
 import (
-	"bytes"
 	"context"
 	"io"
-	"slices"
 	"strings"
 
 	"github.com/bluesky-social/indigo/atproto/syntax"
@@ -17,48 +15,55 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+const importBatchSize = 100
+
 func (s *Server) handleRepoImportRepo(e echo.Context) error {
 	ctx := e.Request().Context()
 	logger := s.logger.With("name", "handleImportRepo")
 
 	urepo := e.Get("repo").(*models.RepoActor)
-
-	b, err := io.ReadAll(e.Request().Body)
-	if err != nil {
-		logger.Error("could not read bytes in import request", "error", err)
-		return helpers.ServerError(e, nil)
-	}
-
 	bs := s.getBlockstore(urepo.Repo.Did)
 
-	cs, err := car.NewCarReader(bytes.NewReader(b))
+	cs, err := car.NewCarReader(e.Request().Body)
 	if err != nil {
 		logger.Error("could not read car in import request", "error", err)
 		return helpers.ServerError(e, nil)
 	}
 
-	orderedBlocks := []blocks.Block{}
-	currBlock, err := cs.Next()
-	if err != nil {
-		logger.Error("could not get first block from car", "error", err)
-		return helpers.ServerError(e, nil)
-	}
-	currBlockCt := 1
+	var batch []blocks.Block
+	blockCount := 0
 
-	for currBlock != nil {
-		logger.Info("someone is importing their repo", "block", currBlockCt)
-		orderedBlocks = append(orderedBlocks, currBlock)
-		next, _ := cs.Next()
-		currBlock = next
-		currBlockCt++
+	for {
+		block, err := cs.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			logger.Error("error reading block from car", "error", err, "block", blockCount)
+			return helpers.ServerError(e, nil)
+		}
+
+		batch = append(batch, block)
+		blockCount++
+
+		if len(batch) >= importBatchSize {
+			if err := bs.PutMany(context.TODO(), batch); err != nil {
+				logger.Error("could not insert blocks batch", "error", err)
+				return helpers.ServerError(e, nil)
+			}
+			logger.Debug("imported block batch", "count", blockCount)
+			batch = batch[:0]
+		}
 	}
 
-	slices.Reverse(orderedBlocks)
-
-	if err := bs.PutMany(context.TODO(), orderedBlocks); err != nil {
-		logger.Error("could not insert blocks", "error", err)
-		return helpers.ServerError(e, nil)
+	if len(batch) > 0 {
+		if err := bs.PutMany(context.TODO(), batch); err != nil {
+			logger.Error("could not insert remaining blocks", "error", err)
+			return helpers.ServerError(e, nil)
+		}
 	}
+
+	logger.Info("imported repo blocks", "total", blockCount, "did", urepo.Repo.Did)
 
 	r, err := repo.OpenRepo(context.TODO(), bs, cs.Header.Roots[0])
 	if err != nil {

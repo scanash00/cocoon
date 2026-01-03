@@ -429,7 +429,6 @@ func New(args *Args) (*Server, error) {
 
 	s.repoman = NewRepoMan(s)
 
-	// TODO: should validate these args
 	if args.SmtpUser == "" || args.SmtpPass == "" || args.SmtpHost == "" || args.SmtpPort == "" || args.SmtpEmail == "" || args.SmtpName == "" {
 		args.Logger.Warn("not enough smtp args were provided. mailing will not work for your server.")
 	} else {
@@ -515,6 +514,7 @@ func (s *Server) addRoutes() {
 	s.echo.POST("/xrpc/com.atproto.server.requestEmailUpdate", s.handleServerRequestEmailUpdate, s.handleLegacySessionMiddleware, s.handleOauthSessionMiddleware)
 	s.echo.POST("/xrpc/com.atproto.server.resetPassword", s.handleServerResetPassword, s.handleLegacySessionMiddleware, s.handleOauthSessionMiddleware)
 	s.echo.POST("/xrpc/com.atproto.server.updateEmail", s.handleServerUpdateEmail, s.handleLegacySessionMiddleware, s.handleOauthSessionMiddleware)
+	s.echo.POST("/xrpc/com.atproto.server.updateEmailAuthFactor", s.handleUpdateEmailAuthFactor, s.handleLegacySessionMiddleware, s.handleOauthSessionMiddleware)
 	s.echo.GET("/xrpc/com.atproto.server.getServiceAuth", s.handleServerGetServiceAuth, s.handleLegacySessionMiddleware, s.handleOauthSessionMiddleware)
 	s.echo.GET("/xrpc/com.atproto.server.checkAccountStatus", s.handleServerCheckAccountStatus, s.handleLegacySessionMiddleware, s.handleOauthSessionMiddleware)
 	s.echo.POST("/xrpc/com.atproto.server.deactivateAccount", s.handleServerDeactivateAccount, s.handleLegacySessionMiddleware, s.handleOauthSessionMiddleware)

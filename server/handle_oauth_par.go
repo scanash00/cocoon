@@ -32,8 +32,13 @@ func (s *Server) handleOauthPar(e echo.Context) error {
 		return helpers.InputError(e, to.StringPtr("InvalidRequest"))
 	}
 
-	// TODO: this seems wrong. should be a way to get the entire request url i believe, but this will work for now
-	dpopProof, err := s.oauthProvider.DpopManager.CheckProof(e.Request().Method, "https://"+s.config.Hostname+e.Request().URL.String(), e.Request().Header, nil)
+	scheme := e.Request().Header.Get("X-Forwarded-Proto")
+	if scheme == "" {
+		scheme = "https"
+	}
+	fullURL := scheme + "://" + s.config.Hostname + e.Request().URL.RequestURI()
+
+	dpopProof, err := s.oauthProvider.DpopManager.CheckProof(e.Request().Method, fullURL, e.Request().Header, nil)
 	if err != nil {
 		if errors.Is(err, dpop.ErrUseDpopNonce) {
 			nonce := s.oauthProvider.NextNonce()

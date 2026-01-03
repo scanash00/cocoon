@@ -2,7 +2,10 @@ package server
 
 import (
 	"errors"
+	"fmt"
+	"math/rand"
 	"strings"
+	"time"
 
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/bluesky-social/indigo/atproto/syntax"
@@ -100,6 +103,54 @@ func (s *Server) handleCreateSession(e echo.Context) error {
 	}
 passwordValid:
 
+	if repo.EmailAuthFactorEnabled {
+		if req.AuthFactorToken == nil {
+			code := fmt.Sprintf("%06d", rand.Intn(1000000))
+			expiresAt := time.Now().Add(10 * time.Minute)
+
+			if err := s.db.Exec(ctx, "UPDATE repos SET email_auth_factor_code = ?, email_auth_factor_code_expires_at = ? WHERE did = ?",
+				nil, code, expiresAt, repo.Repo.Did).Error; err != nil {
+				s.logger.Error("error storing email auth factor code", "error", err)
+				return helpers.ServerError(e, nil)
+			}
+
+			if s.mail != nil {
+				s.mailLk.Lock()
+				s.mail.To(repo.Email)
+				s.mail.Subject("Your sign-in code")
+				s.mail.HTML().Set(fmt.Sprintf(`
+					<h1>Sign-in code</h1>
+					<p>Your sign-in code is: <strong>%s</strong></p>
+					<p>This code will expire in 10 minutes.</p>
+				`, code))
+				if err := s.mail.Send(); err != nil {
+					s.mailLk.Unlock()
+					s.logger.Error("error sending email auth factor code", "error", err)
+					return helpers.ServerError(e, nil)
+				}
+				s.mailLk.Unlock()
+			}
+
+			return e.JSON(401, map[string]string{
+				"error":   "AuthFactorTokenRequired",
+				"message": "A sign-in code has been sent to your email address",
+			})
+		}
+
+		if repo.EmailAuthFactorCode == nil || *repo.EmailAuthFactorCode != *req.AuthFactorToken {
+			return helpers.InputError(e, to.StringPtr("InvalidToken"))
+		}
+
+		if repo.EmailAuthFactorCodeExpiresAt == nil || time.Now().After(*repo.EmailAuthFactorCodeExpiresAt) {
+			return helpers.InputError(e, to.StringPtr("ExpiredToken"))
+		}
+
+		if err := s.db.Exec(ctx, "UPDATE repos SET email_auth_factor_code = NULL, email_auth_factor_code_expires_at = NULL WHERE did = ?",
+			nil, repo.Repo.Did).Error; err != nil {
+			s.logger.Error("error clearing email auth factor code", "error", err)
+		}
+	}
+
 	sess, err := s.createSession(ctx, &repo.Repo)
 	if err != nil {
 		s.logger.Error("error creating session", "error", err)
@@ -113,7 +164,7 @@ passwordValid:
 		Did:             repo.Repo.Did,
 		Email:           repo.Email,
 		EmailConfirmed:  repo.EmailConfirmedAt != nil,
-		EmailAuthFactor: false,
+		EmailAuthFactor: repo.EmailAuthFactorEnabled,
 		Active:          repo.Active(),
 		Status:          repo.Status(),
 	})
