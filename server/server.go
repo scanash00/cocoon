@@ -462,10 +462,12 @@ func (s *Server) addRoutes() {
 
 	// public
 	s.echo.GET("/xrpc/com.atproto.identity.resolveHandle", s.handleResolveHandle)
-	s.echo.POST("/xrpc/com.atproto.server.createAccount", s.handleCreateAccount)
-	s.echo.POST("/xrpc/com.atproto.server.createSession", s.handleCreateSession)
 	s.echo.GET("/xrpc/com.atproto.server.describeServer", s.handleDescribeServer)
 	s.echo.POST("/xrpc/com.atproto.server.reserveSigningKey", s.handleServerReserveSigningKey)
+	authRateLimiter := middleware.RateLimiter(middleware.NewRateLimiterMemoryStore(5))
+	strictRateLimiter := middleware.RateLimiter(middleware.NewRateLimiterMemoryStore(1))	
+	s.echo.POST("/xrpc/com.atproto.server.createAccount", s.handleCreateAccount, strictRateLimiter)
+	s.echo.POST("/xrpc/com.atproto.server.createSession", s.handleCreateSession, authRateLimiter)
 
 	s.echo.GET("/xrpc/com.atproto.repo.describeRepo", s.handleDescribeRepo)
 	s.echo.GET("/xrpc/com.atproto.sync.listRepos", s.handleListRepos)
@@ -487,17 +489,17 @@ func (s *Server) addRoutes() {
 	s.echo.GET("/account", s.handleAccount)
 	s.echo.POST("/account/revoke", s.handleAccountRevoke)
 	s.echo.GET("/account/signin", s.handleAccountSigninGet)
-	s.echo.POST("/account/signin", s.handleAccountSigninPost)
+	s.echo.POST("/account/signin", s.handleAccountSigninPost, authRateLimiter)
 	s.echo.GET("/account/signout", s.handleAccountSignout)
 
 	// oauth account
 	s.echo.GET("/oauth/jwks", s.handleOauthJwks)
 	s.echo.GET("/oauth/authorize", s.handleOauthAuthorizeGet)
-	s.echo.POST("/oauth/authorize", s.handleOauthAuthorizePost)
+	s.echo.POST("/oauth/authorize", s.handleOauthAuthorizePost, authRateLimiter)
 
 	// oauth authorization
 	s.echo.POST("/oauth/par", s.handleOauthPar, s.oauthProvider.BaseMiddleware)
-	s.echo.POST("/oauth/token", s.handleOauthToken, s.oauthProvider.BaseMiddleware)
+	s.echo.POST("/oauth/token", s.handleOauthToken, s.oauthProvider.BaseMiddleware, authRateLimiter)
 
 	// authed
 	s.echo.GET("/xrpc/com.atproto.server.getSession", s.handleGetSession, s.handleLegacySessionMiddleware, s.handleOauthSessionMiddleware)
@@ -508,18 +510,18 @@ func (s *Server) addRoutes() {
 	s.echo.POST("/xrpc/com.atproto.identity.requestPlcOperationSignature", s.handleIdentityRequestPlcOperationSignature, s.handleLegacySessionMiddleware, s.handleOauthSessionMiddleware)
 	s.echo.POST("/xrpc/com.atproto.identity.signPlcOperation", s.handleSignPlcOperation, s.handleLegacySessionMiddleware, s.handleOauthSessionMiddleware)
 	s.echo.POST("/xrpc/com.atproto.identity.submitPlcOperation", s.handleSubmitPlcOperation, s.handleLegacySessionMiddleware, s.handleOauthSessionMiddleware)
-	s.echo.POST("/xrpc/com.atproto.server.confirmEmail", s.handleServerConfirmEmail, s.handleLegacySessionMiddleware, s.handleOauthSessionMiddleware)
-	s.echo.POST("/xrpc/com.atproto.server.requestEmailConfirmation", s.handleServerRequestEmailConfirmation, s.handleLegacySessionMiddleware, s.handleOauthSessionMiddleware)
-	s.echo.POST("/xrpc/com.atproto.server.requestPasswordReset", s.handleServerRequestPasswordReset) // AUTH NOT REQUIRED FOR THIS ONE
-	s.echo.POST("/xrpc/com.atproto.server.requestEmailUpdate", s.handleServerRequestEmailUpdate, s.handleLegacySessionMiddleware, s.handleOauthSessionMiddleware)
-	s.echo.POST("/xrpc/com.atproto.server.resetPassword", s.handleServerResetPassword, s.handleLegacySessionMiddleware, s.handleOauthSessionMiddleware)
+	s.echo.POST("/xrpc/com.atproto.server.confirmEmail", s.handleServerConfirmEmail, s.handleLegacySessionMiddleware, s.handleOauthSessionMiddleware, authRateLimiter)
+	s.echo.POST("/xrpc/com.atproto.server.requestEmailConfirmation", s.handleServerRequestEmailConfirmation, s.handleLegacySessionMiddleware, s.handleOauthSessionMiddleware, strictRateLimiter)
+	s.echo.POST("/xrpc/com.atproto.server.requestPasswordReset", s.handleServerRequestPasswordReset, strictRateLimiter) // AUTH NOT REQUIRED FOR THIS ONE
+	s.echo.POST("/xrpc/com.atproto.server.requestEmailUpdate", s.handleServerRequestEmailUpdate, s.handleLegacySessionMiddleware, s.handleOauthSessionMiddleware, strictRateLimiter)
+	s.echo.POST("/xrpc/com.atproto.server.resetPassword", s.handleServerResetPassword, s.handleLegacySessionMiddleware, s.handleOauthSessionMiddleware, authRateLimiter)
 	s.echo.POST("/xrpc/com.atproto.server.updateEmail", s.handleServerUpdateEmail, s.handleLegacySessionMiddleware, s.handleOauthSessionMiddleware)
 	s.echo.GET("/xrpc/com.atproto.server.getServiceAuth", s.handleServerGetServiceAuth, s.handleLegacySessionMiddleware, s.handleOauthSessionMiddleware)
 	s.echo.GET("/xrpc/com.atproto.server.checkAccountStatus", s.handleServerCheckAccountStatus, s.handleLegacySessionMiddleware, s.handleOauthSessionMiddleware)
 	s.echo.POST("/xrpc/com.atproto.server.deactivateAccount", s.handleServerDeactivateAccount, s.handleLegacySessionMiddleware, s.handleOauthSessionMiddleware)
 	s.echo.POST("/xrpc/com.atproto.server.activateAccount", s.handleServerActivateAccount, s.handleLegacySessionMiddleware, s.handleOauthSessionMiddleware)
 	s.echo.POST("/xrpc/com.atproto.server.requestAccountDelete", s.handleServerRequestAccountDelete, s.handleLegacySessionMiddleware, s.handleOauthSessionMiddleware)
-	s.echo.POST("/xrpc/com.atproto.server.deleteAccount", s.handleServerDeleteAccount)
+	s.echo.POST("/xrpc/com.atproto.server.deleteAccount", s.handleServerDeleteAccount, strictRateLimiter)
 
 	// app passwords
 	s.echo.POST("/xrpc/com.atproto.server.createAppPassword", s.handleCreateAppPassword, s.handleLegacySessionMiddleware, s.handleOauthSessionMiddleware)
