@@ -6,7 +6,8 @@ import (
 )
 
 type AccountRevokeInput struct {
-	Token string `form:"token"`
+	Token    string `form:"token"`
+	ClientId string `form:"client_id"`
 }
 
 func (s *Server) handleAccountRevoke(e echo.Context) error {
@@ -24,14 +25,24 @@ func (s *Server) handleAccountRevoke(e echo.Context) error {
 		return e.Redirect(303, "/account/signin")
 	}
 
-	if err := s.db.Exec(ctx, "DELETE FROM oauth_tokens WHERE sub = ? AND token = ?", nil, repo.Repo.Did, req.Token).Error; err != nil {
-		logger.Error("couldnt delete oauth session for account", "did", repo.Repo.Did, "token", req.Token, "error", err)
-		sess.AddFlash("Unable to revoke session. See server logs for more details.", "error")
-		sess.Save(e.Request(), e.Response())
-		return e.Redirect(303, "/account")
+	if req.ClientId != "" {
+		if err := s.db.Exec(ctx, "DELETE FROM oauth_tokens WHERE sub = ? AND client_id = ?", nil, repo.Repo.Did, req.ClientId).Error; err != nil {
+			logger.Error("couldnt delete oauth sessions for client", "did", repo.Repo.Did, "client_id", req.ClientId, "error", err)
+			sess.AddFlash("Unable to revoke sessions. See server logs for more details.", "error")
+			sess.Save(e.Request(), e.Response())
+			return e.Redirect(303, "/account")
+		}
+		sess.AddFlash("All sessions for application revoked!", "success")
+	} else {
+		if err := s.db.Exec(ctx, "DELETE FROM oauth_tokens WHERE sub = ? AND token = ?", nil, repo.Repo.Did, req.Token).Error; err != nil {
+			logger.Error("couldnt delete oauth session for account", "did", repo.Repo.Did, "token", req.Token, "error", err)
+			sess.AddFlash("Unable to revoke session. See server logs for more details.", "error")
+			sess.Save(e.Request(), e.Response())
+			return e.Redirect(303, "/account")
+		}
+		sess.AddFlash("Session successfully revoked!", "success")
 	}
 
-	sess.AddFlash("Session successfully revoked!", "success")
 	sess.Save(e.Request(), e.Response())
 	return e.Redirect(303, "/account")
 }

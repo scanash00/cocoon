@@ -54,12 +54,20 @@
     <div id="groupsContainer">
       {{ range .ClientGroups }}
       <div class="client-group">
-        <h3 class="group-header"
-          style="margin-top: 1.5rem; margin-bottom: 1rem; color: var(--text-primary); font-size: 1.125rem;">
-          {{ .Name }} <span
-            style="color: var(--text-muted); font-weight: normal; font-size: 0.875rem; margin-left: 0.5rem;">({{ len
-            .Sessions }} sessions)</span>
-        </h3>
+        <div class="group-header"
+          style="margin-top: 1.5rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.5rem;">
+          <h3 style="margin: 0; font-size: 1.125rem; color: var(--text-primary);">
+            {{ .Name }} <span
+              style="color: var(--text-muted); font-weight: normal; font-size: 0.875rem; margin-left: 0.5rem;">({{ len
+              .Sessions }} sessions)</span>
+          </h3>
+          <form action="/account/revoke" method="post" style="margin: 0;">
+            <input type="hidden" name="client_id" value="{{ .ID }}" />
+            <button type="submit" class="btn btn-sm btn-ghost" style="color: var(--danger);"
+              onclick="return confirm('Are you sure you want to revoke all sessions for {{ .Name }}?');">Revoke
+              All</button>
+          </form>
+        </div>
 
         <div class="group-sessions">
           {{ range .Sessions }}

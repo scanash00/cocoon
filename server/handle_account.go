@@ -80,6 +80,7 @@ func (s *Server) handleAccount(e echo.Context) error {
 	}
 
 	type ClientGroup struct {
+		ID       string
 		Name     string
 		Sessions []Session
 	}
@@ -110,12 +111,18 @@ func (s *Server) handleAccount(e echo.Context) error {
 			Ip:          t.Ip,
 		}
 
-		groupsMap[clientName] = append(groupsMap[clientName], session)
+		groupsMap[t.ClientId] = append(groupsMap[t.ClientId], session)
 	}
 
 	var clientGroups []ClientGroup
-	for name, sessions := range groupsMap {
+	for clientId, sessions := range groupsMap {
+		name := clientId
+		if n, ok := clientNames[clientId]; ok {
+			name = n
+		}
+		
 		clientGroups = append(clientGroups, ClientGroup{
+			ID:       clientId,
 			Name:     name,
 			Sessions: sessions,
 		})
