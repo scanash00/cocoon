@@ -21,7 +21,7 @@ import (
 type Manager struct {
 	cli           *http.Client
 	logger        *slog.Logger
-	jwksCache     cache.Cache[string, jwk.Key]
+	jwksCache     cache.Cache[string, jwk.Set]
 	metadataCache cache.Cache[string, *Metadata]
 }
 
@@ -39,7 +39,7 @@ func NewManager(args ManagerArgs) *Manager {
 		args.Cli = http.DefaultClient
 	}
 
-	jwksCache := cache.NewCache[string, jwk.Key]().WithLRU().WithMaxKeys(500).WithTTL(5 * time.Minute)
+	jwksCache := cache.NewCache[string, jwk.Set]().WithLRU().WithMaxKeys(500).WithTTL(5 * time.Minute)
 	metadataCache := cache.NewCache[string, *Metadata]().WithLRU().WithMaxKeys(500).WithTTL(5 * time.Minute)
 
 	return &Manager{
@@ -56,29 +56,33 @@ func (cm *Manager) GetClient(ctx context.Context, clientId string) (*Client, err
 		return nil, err
 	}
 
-	var jwks jwk.Key
+	var keySet jwk.Set
 	if metadata.TokenEndpointAuthMethod == "private_key_jwt" {
 		if metadata.JWKS != nil && len(metadata.JWKS.Keys) > 0 {
-			// TODO: this is kinda bad but whatever for now. there could obviously be more than one jwk, and we need to
-			// make sure we use the right one
-			b, err := json.Marshal(metadata.JWKS.Keys[0])
-			if err != nil {
-				return nil, err
-			}
+			// Build keyset from all inline keys
+			keySet = jwk.NewSet()
+			for _, keyMap := range metadata.JWKS.Keys {
+				b, err := json.Marshal(keyMap)
+				if err != nil {
+					return nil, err
+				}
 
-			k, err := helpers.ParseJWKFromBytes(b)
-			if err != nil {
-				return nil, err
-			}
+				k, err := helpers.ParseJWKFromBytes(b)
+				if err != nil {
+					return nil, err
+				}
 
-			jwks = k
+				if err := keySet.AddKey(k); err != nil {
+					return nil, err
+				}
+			}
 		} else if metadata.JWKSURI != nil {
 			maybeJwks, err := cm.getClientJwks(ctx, clientId, *metadata.JWKSURI)
 			if err != nil {
 				return nil, err
 			}
 
-			jwks = maybeJwks
+			keySet = maybeJwks
 		} else {
 			return nil, fmt.Errorf("no valid jwks found in oauth client metadata")
 		}
@@ -86,7 +90,7 @@ func (cm *Manager) GetClient(ctx context.Context, clientId string) (*Client, err
 
 	return &Client{
 		Metadata: metadata,
-		JWKS:     jwks,
+		JWKS:     keySet,
 	}, nil
 }
 
@@ -127,8 +131,8 @@ func (cm *Manager) getClientMetadata(ctx context.Context, clientId string) (*Met
 	}
 }
 
-func (cm *Manager) getClientJwks(ctx context.Context, clientId, jwksUri string) (jwk.Key, error) {
-	jwks, ok := cm.jwksCache.Get(clientId)
+func (cm *Manager) getClientJwks(ctx context.Context, clientId, jwksUri string) (jwk.Set, error) {
+	keySet, ok := cm.jwksCache.Get(clientId)
 	if !ok {
 		req, err := http.NewRequestWithContext(ctx, "GET", jwksUri, nil)
 		if err != nil {
@@ -159,21 +163,28 @@ func (cm *Manager) getClientJwks(ctx context.Context, clientId, jwksUri string) 
 			return nil, errors.New("no keys in jwks response")
 		}
 
-		// TODO: this is again bad, we should be figuring out which one we need to use...
-		b, err := json.Marshal(keys.Keys[0])
-		if err != nil {
-			return nil, fmt.Errorf("could not marshal key: %w", err)
+		// Build keyset from all keys in response
+		keySet = jwk.NewSet()
+		for _, keyMap := range keys.Keys {
+			b, err := json.Marshal(keyMap)
+			if err != nil {
+				return nil, fmt.Errorf("could not marshal key: %w", err)
+			}
+
+			k, err := helpers.ParseJWKFromBytes(b)
+			if err != nil {
+				return nil, err
+			}
+
+			if err := keySet.AddKey(k); err != nil {
+				return nil, err
+			}
 		}
 
-		k, err := helpers.ParseJWKFromBytes(b)
-		if err != nil {
-			return nil, err
-		}
-
-		jwks = k
+		cm.jwksCache.Set(clientId, keySet, 5*time.Minute)
 	}
 
-	return jwks, nil
+	return keySet, nil
 }
 
 func validateAndParseMetadata(clientId string, b []byte) (*Metadata, error) {

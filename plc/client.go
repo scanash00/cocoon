@@ -92,16 +92,9 @@ func (c *Client) CreateDidCredentials(sigkey *atcrypto.PrivateKeyK256, recovery 
 		return nil, err
 	}
 
-	// todo
 	rotationKeys := []string{pubrotkey.DIDKey()}
 	if recovery != "" {
-		rotationKeys = func(recovery string) []string {
-			newRotationKeys := []string{recovery}
-			for _, k := range rotationKeys {
-				newRotationKeys = append(newRotationKeys, k)
-			}
-			return newRotationKeys
-		}(recovery)
+		rotationKeys = append([]string{recovery}, rotationKeys...)
 	}
 
 	creds := DidCredentials{

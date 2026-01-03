@@ -15,6 +15,7 @@ import (
 type SqliteBlockstore struct {
 	db       *db.DB
 	did      string
+	rev      string
 	readonly bool
 	inserts  map[cid.Cid]blocks.Block
 }
@@ -35,6 +36,10 @@ func NewReadOnly(did string, db *db.DB) *SqliteBlockstore {
 		readonly: true,
 		inserts:  map[cid.Cid]blocks.Block{},
 	}
+}
+
+func (bs *SqliteBlockstore) SetRev(rev string) {
+	bs.rev = rev
 }
 
 func (bs *SqliteBlockstore) Get(ctx context.Context, cid cid.Cid) (blocks.Block, error) {
@@ -64,10 +69,15 @@ func (bs *SqliteBlockstore) Put(ctx context.Context, block blocks.Block) error {
 		return nil
 	}
 
+	rev := bs.rev
+	if rev == "" {
+		rev = syntax.NewTIDNow(0).String()
+	}
+
 	b := models.Block{
 		Did:   bs.did,
 		Cid:   block.Cid().Bytes(),
-		Rev:   syntax.NewTIDNow(0).String(), // TODO: WARN, this is bad. don't do this
+		Rev:   rev,
 		Value: block.RawData(),
 	}
 
@@ -96,6 +106,11 @@ func (bs *SqliteBlockstore) GetSize(context.Context, cid.Cid) (int, error) {
 func (bs *SqliteBlockstore) PutMany(ctx context.Context, blocks []blocks.Block) error {
 	tx := bs.db.BeginDangerously(ctx)
 
+	rev := bs.rev
+	if rev == "" {
+		rev = syntax.NewTIDNow(0).String()
+	}
+
 	for _, block := range blocks {
 		bs.inserts[block.Cid()] = block
 
@@ -106,7 +121,7 @@ func (bs *SqliteBlockstore) PutMany(ctx context.Context, blocks []blocks.Block) 
 		b := models.Block{
 			Did:   bs.did,
 			Cid:   block.Cid().Bytes(),
-			Rev:   syntax.NewTIDNow(0).String(), // TODO: WARN, this is bad. don't do this
+			Rev:   rev,
 			Value: block.RawData(),
 		}
 
