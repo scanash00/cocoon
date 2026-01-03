@@ -142,3 +142,9 @@ type EventSequence struct {
 	ID  uint  `gorm:"primaryKey"`
 	Seq int64 `gorm:"not null;default:0"`
 }
+
+type Event struct {
+	Seq       int64     `gorm:"primaryKey"`
+	Data      []byte    `gorm:"type:bytea"`
+	CreatedAt time.Time `gorm:"index"`
+}

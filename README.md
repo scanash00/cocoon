@@ -253,15 +253,13 @@ Tracking error handling, validation, and proper ATProto error codes. Items marke
 - [x] `com.atproto.sync.getRepo`
 - [x] `com.atproto.sync.listBlobs`
 - [x] `com.atproto.sync.listRepos`
-- [ ] `com.atproto.sync.subscribeRepos`
+- [x] `com.atproto.sync.subscribeRepos`
 
 #### Other
 - [x] `com.atproto.label.queryLabels`
 - [x] `app.bsky.actor.getPreferences`
 - [x] `app.bsky.actor.putPreferences`
 
-
-### Identity
 
 - [x] `com.atproto.identity.getRecommendedDidCredentials`
 - [x] `com.atproto.identity.requestPlcOperationSignature`

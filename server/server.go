@@ -79,6 +79,7 @@ type Server struct {
 	repoman       *RepoMan
 	oauthProvider *provider.Provider
 	evtman        *events.EventManager
+	dbPersister   *DbPersister
 	passport      *identity.Passport
 	fallbackProxy string
 
@@ -394,7 +395,6 @@ func New(args *Args) (*Server, error) {
 			BlockstoreVariant: args.BlockstoreVariant,
 			FallbackProxy:     args.FallbackProxy,
 		},
-		evtman:   events.NewEventManager(events.NewMemPersister()),
 		passport: identity.NewPassport(h, identity.NewMemCache(10_000)),
 
 		dbName:   args.DbName,
@@ -570,9 +570,13 @@ func (s *Server) Serve(ctx context.Context) error {
 		&models.ReservedKey{},
 		&models.AppPassword{},
 		&models.EventSequence{},
+		&models.Event{},
 		&provider.OauthToken{},
 		&provider.OauthAuthorizationRequest{},
 	)
+
+	s.dbPersister = NewDbPersister(s.db)
+	s.evtman = events.NewEventManager(s.dbPersister)
 
 	logger.Info("starting cocoon")
 
@@ -587,6 +591,21 @@ func (s *Server) Serve(ctx context.Context) error {
 	go func() {
 		if err := s.requestCrawl(ctx); err != nil {
 			logger.Error("error requesting crawls", "err", err)
+		}
+	}()
+
+	go func() {
+		ticker := time.NewTicker(1 * time.Hour)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				if err := s.dbPersister.CleanupOldEvents(ctx, 72*time.Hour); err != nil {
+					logger.Error("error cleaning up old events", "err", err)
+				}
+			}
 		}
 	}()
 
