@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <link rel="stylesheet" href="/static/style.css" />
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <title>Cocoon PDS</title>
+</head>
+
+<body class="page-centered">
+    <main class="container">
+        <div class="section-header">
+            <div class="app-icon" style="margin: 0 auto 1.5rem auto; width: 64px; height: 64px;">
+                <i data-lucide="cloud" style="width: 32px; height: 32px;"></i>
+            </div>
+            <h2>A fork of the Cocoon PDS</h2>
+            <p>This is an AT Protocol Personal Data Server.</p>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="info-row">
+            <p class="text-muted">Version</p>
+            <p>{{ .Version }}</p>
+        </div>
+
+        <div class="info-row">
+            <p class="text-muted">Source Code</p>
+            <p><a href="https://github.com/scanash00/cocoon" target="_blank">GitHub</a></p>
+        </div>
+
+        <div class="btn-row" style="margin-top: 2rem;">
+            <a href="/account/signin" class="btn-primary" style="text-decoration: none; text-align: center;">Sign In</a>
+        </div>
+
+    </main>
+    <script>lucide.createIcons();</script>
+</body>
+
+</html>
