@@ -72,7 +72,7 @@ func (s *Server) handleSubmitPlcOperation(e echo.Context) error {
 	}
 
 	if err := s.plcClient.SendOperation(e.Request().Context(), repo.Repo.Did, &op); err != nil {
-		s.logger.Error("error", "error", err); return helpers.ServerError(e, nil)
+		s.logger.Error("error sending plc operation", "error", err); return helpers.ServerError(e, nil)
 	}
 
 	if err := s.passport.BustDoc(e.Request().Context(), repo.Repo.Did); err != nil {

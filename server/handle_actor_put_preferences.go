@@ -19,16 +19,16 @@ func (s *Server) handleActorPutPreferences(e echo.Context) error {
 
 	var prefs map[string]any
 	if err := json.NewDecoder(e.Request().Body).Decode(&prefs); err != nil {
-		s.logger.Error("error", "error", err); return helpers.ServerError(e, nil)
+		s.logger.Error("error decoding preferences", "error", err); return helpers.ServerError(e, nil)
 	}
 
 	b, err := json.Marshal(prefs)
 	if err != nil {
-		s.logger.Error("error", "error", err); return helpers.ServerError(e, nil)
+		s.logger.Error("error marshaling preferences", "error", err); return helpers.ServerError(e, nil)
 	}
 
 	if err := s.db.Exec(ctx, "UPDATE repos SET preferences = ? WHERE did = ?", nil, b, repo.Repo.Did).Error; err != nil {
-		s.logger.Error("error", "error", err); return helpers.ServerError(e, nil)
+		s.logger.Error("error saving preferences to db", "error", err); return helpers.ServerError(e, nil)
 	}
 
 	return e.NoContent(200)
