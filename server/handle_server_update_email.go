@@ -1,6 +1,7 @@
 package server
 
 import (
+	"strings"
 	"time"
 
 	"github.com/Azure/go-autorest/autorest/to"
@@ -37,10 +38,9 @@ func (s *Server) handleServerUpdateEmail(e echo.Context) error {
 		tokenRequired = true
 	}
 
-	if !req.EmailAuthFactor && urepo.EmailAuthFactorEnabled {
+	if req.EmailAuthFactor != urepo.EmailAuthFactorEnabled {
 		tokenRequired = true
 	}
-
 	if req.EmailAuthFactor && !urepo.EmailAuthFactorEnabled {
 		if urepo.EmailConfirmedAt == nil && req.Email == urepo.Email {
 			return helpers.InputError(e, to.StringPtr("EmailNotConfirmed"))
@@ -56,7 +56,8 @@ func (s *Server) handleServerUpdateEmail(e echo.Context) error {
 			return helpers.InvalidTokenError(e)
 		}
 
-		if *urepo.EmailUpdateCode != req.Token {
+		cleanToken := strings.TrimSpace(req.Token)
+		if !strings.EqualFold(*urepo.EmailUpdateCode, cleanToken) {
 			return helpers.InvalidTokenError(e)
 		}
 

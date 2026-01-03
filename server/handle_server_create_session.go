@@ -104,7 +104,7 @@ func (s *Server) handleCreateSession(e echo.Context) error {
 passwordValid:
 
 	if repo.EmailAuthFactorEnabled {
-		if req.AuthFactorToken == nil {
+		if req.AuthFactorToken == nil || *req.AuthFactorToken == "" {
 			code := fmt.Sprintf("%06d", rand.Intn(1000000))
 			expiresAt := time.Now().Add(10 * time.Minute)
 

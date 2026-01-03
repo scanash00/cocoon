@@ -159,7 +159,7 @@ func (s *Server) sendEmailUpdate(email, handle, code string) error {
 	defer s.mailLk.Unlock()
 
 	data := emailData{
-		Subject:  "Email update for " + s.config.Hostname,
+		Subject:  "Security update for " + s.config.Hostname,
 		Hostname: s.config.Hostname,
 		Handle:   handle,
 		Code:     code,
