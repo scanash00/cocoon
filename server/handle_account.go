@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"sort"
 	"sync"
 	"time"
 
@@ -128,6 +129,9 @@ func (s *Server) handleAccount(e echo.Context) error {
 		})
 	}
 
+	sort.Slice(clientGroups, func(i, j int) bool {
+		return clientGroups[i].Name < clientGroups[j].Name
+	})
 
 	return e.Render(200, "account.html", map[string]any{
 		"Repo":         repo,

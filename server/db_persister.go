@@ -3,6 +3,7 @@ package server
 import (
 	"bytes"
 	"context"
+	"log/slog"
 	"sync"
 	"time"
 
@@ -22,6 +23,7 @@ type DbPersister struct {
 func NewDbPersister(database *db.DB) *DbPersister {
 	var seqRecord dbmodels.EventSequence
 	if err := database.Raw(context.Background(), "SELECT seq FROM event_sequences WHERE id = 1", nil).Scan(&seqRecord).Error; err != nil {
+		slog.Warn("could not load event sequence from DB, starting from 0", "error", err)
 	}
 
 	return &DbPersister{

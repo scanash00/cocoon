@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"time"
 
 	"github.com/bluesky-social/indigo/api/atproto"
@@ -34,7 +33,7 @@ func (s *Server) handleServerActivateAccount(e echo.Context) error {
 		return helpers.ServerError(e, nil)
 	}
 
-	s.evtman.AddEvent(context.TODO(), &events.XRPCStreamEvent{
+	s.evtman.AddEvent(ctx, &events.XRPCStreamEvent{
 		RepoAccount: &atproto.SyncSubscribeRepos_Account{
 			Active: true,
 			Did:    urepo.Repo.Did,

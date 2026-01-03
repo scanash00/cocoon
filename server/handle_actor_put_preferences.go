@@ -29,5 +29,5 @@ func (s *Server) handleActorPutPreferences(e echo.Context) error {
 		s.logger.Error("error", "error", err); return helpers.ServerError(e, nil)
 	}
 
-	return nil
+	return e.NoContent(200)
 }

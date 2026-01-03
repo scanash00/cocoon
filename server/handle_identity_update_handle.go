@@ -85,11 +85,11 @@ func (s *Server) handleIdentityUpdateHandle(e echo.Context) error {
 		}
 	}
 
-	if err := s.passport.BustDoc(context.TODO(), repo.Repo.Did); err != nil {
+	if err := s.passport.BustDoc(ctx, repo.Repo.Did); err != nil {
 		logger.Warn("error busting did doc", "error", err)
 	}
 
-	s.evtman.AddEvent(context.TODO(), &events.XRPCStreamEvent{
+	s.evtman.AddEvent(ctx, &events.XRPCStreamEvent{
 		RepoIdentity: &atproto.SyncSubscribeRepos_Identity{
 			Did:    repo.Repo.Did,
 			Handle: to.StringPtr(req.Handle),

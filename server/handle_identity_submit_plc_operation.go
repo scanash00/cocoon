@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"slices"
 	"strings"
 	"time"
@@ -74,11 +73,11 @@ func (s *Server) handleSubmitPlcOperation(e echo.Context) error {
 		s.logger.Error("error", "error", err); return helpers.ServerError(e, nil)
 	}
 
-	if err := s.passport.BustDoc(context.TODO(), repo.Repo.Did); err != nil {
+	if err := s.passport.BustDoc(e.Request().Context(), repo.Repo.Did); err != nil {
 		logger.Warn("error busting did doc", "error", err)
 	}
 
-	s.evtman.AddEvent(context.TODO(), &events.XRPCStreamEvent{
+	s.evtman.AddEvent(e.Request().Context(), &events.XRPCStreamEvent{
 		RepoIdentity: &atproto.SyncSubscribeRepos_Identity{
 			Did:  repo.Repo.Did,
 			Seq:  s.nextSeq(e.Request().Context()),
@@ -86,5 +85,5 @@ func (s *Server) handleSubmitPlcOperation(e echo.Context) error {
 		},
 	})
 
-	return nil
+	return e.NoContent(200)
 }

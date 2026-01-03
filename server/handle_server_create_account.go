@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -221,20 +220,20 @@ func (s *Server) handleCreateAccount(e echo.Context) error {
 
 	if request.Did == nil || *request.Did == "" {
 		bs := s.getBlockstore(signupDid)
-		r := repo.NewRepo(context.TODO(), signupDid, bs)
+		r := repo.NewRepo(ctx, signupDid, bs)
 
-		root, rev, err := r.Commit(context.TODO(), urepo.SignFor)
+		root, rev, err := r.Commit(ctx, urepo.SignFor)
 		if err != nil {
 			logger.Error("error committing", "error", err)
 			return helpers.ServerError(e, nil)
 		}
 
-		if err := s.UpdateRepo(context.TODO(), urepo.Did, root, rev); err != nil {
+		if err := s.UpdateRepo(ctx, urepo.Did, root, rev); err != nil {
 			logger.Error("error updating repo after commit", "error", err)
 			return helpers.ServerError(e, nil)
 		}
 
-		s.evtman.AddEvent(context.TODO(), &events.XRPCStreamEvent{
+		s.evtman.AddEvent(ctx, &events.XRPCStreamEvent{
 			RepoIdentity: &atproto.SyncSubscribeRepos_Identity{
 				Did:    urepo.Did,
 				Handle: to.StringPtr(request.Handle),

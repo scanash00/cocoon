@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"io"
 	"strings"
 
@@ -47,7 +46,7 @@ func (s *Server) handleRepoImportRepo(e echo.Context) error {
 		blockCount++
 
 		if len(batch) >= importBatchSize {
-			if err := bs.PutMany(context.TODO(), batch); err != nil {
+			if err := bs.PutMany(ctx, batch); err != nil {
 				logger.Error("could not insert blocks batch", "error", err)
 				return helpers.ServerError(e, nil)
 			}
@@ -57,7 +56,7 @@ func (s *Server) handleRepoImportRepo(e echo.Context) error {
 	}
 
 	if len(batch) > 0 {
-		if err := bs.PutMany(context.TODO(), batch); err != nil {
+		if err := bs.PutMany(ctx, batch); err != nil {
 			logger.Error("could not insert remaining blocks", "error", err)
 			return helpers.ServerError(e, nil)
 		}
@@ -65,7 +64,7 @@ func (s *Server) handleRepoImportRepo(e echo.Context) error {
 
 	logger.Info("imported repo blocks", "total", blockCount, "did", urepo.Repo.Did)
 
-	r, err := repo.OpenRepo(context.TODO(), bs, cs.Header.Roots[0])
+	r, err := repo.OpenRepo(ctx, bs, cs.Header.Roots[0])
 	if err != nil {
 		logger.Error("could not open repo", "error", err)
 		return helpers.ServerError(e, nil)
@@ -75,12 +74,12 @@ func (s *Server) handleRepoImportRepo(e echo.Context) error {
 
 	clock := syntax.NewTIDClock(0)
 
-	if err := r.ForEach(context.TODO(), "", func(key string, cid cid.Cid) error {
+	if err := r.ForEach(ctx, "", func(key string, cid cid.Cid) error {
 		pts := strings.Split(key, "/")
 		nsid := pts[0]
 		rkey := pts[1]
 		cidStr := cid.String()
-		b, err := bs.Get(context.TODO(), cid)
+		b, err := bs.Get(ctx, cid)
 		if err != nil {
 			logger.Error("record bytes don't exist in blockstore", "error", err)
 			return helpers.ServerError(e, nil)
@@ -108,16 +107,16 @@ func (s *Server) handleRepoImportRepo(e echo.Context) error {
 
 	tx.Commit()
 
-	root, rev, err := r.Commit(context.TODO(), urepo.SignFor)
+	root, rev, err := r.Commit(ctx, urepo.SignFor)
 	if err != nil {
 		logger.Error("error committing", "error", err)
 		return helpers.ServerError(e, nil)
 	}
 
-	if err := s.UpdateRepo(context.TODO(), urepo.Repo.Did, root, rev); err != nil {
+	if err := s.UpdateRepo(ctx, urepo.Repo.Did, root, rev); err != nil {
 		logger.Error("error updating repo after commit", "error", err)
 		return helpers.ServerError(e, nil)
 	}
 
-	return nil
+	return e.NoContent(200)
 }

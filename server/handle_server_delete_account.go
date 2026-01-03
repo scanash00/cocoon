@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"time"
 
 	"github.com/Azure/go-autorest/autorest/to"
@@ -136,7 +135,7 @@ func (s *Server) handleServerDeleteAccount(e echo.Context) error {
 		return helpers.ServerError(e, nil)
 	}
 
-	s.evtman.AddEvent(context.TODO(), &events.XRPCStreamEvent{
+	s.evtman.AddEvent(ctx, &events.XRPCStreamEvent{
 		RepoAccount: &atproto.SyncSubscribeRepos_Account{
 			Active: false,
 			Did:    req.Did,
