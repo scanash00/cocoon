@@ -15,7 +15,9 @@ import (
 )
 
 func (s *Server) handleSyncSubscribeRepos(e echo.Context) error {
-	ctx := e.Request().Context()
+	ctx, cancel := context.WithCancel(e.Request().Context())
+	defer cancel()
+
 	logger := s.logger.With("component", "subscribe-repos-websocket")
 
 	conn, err := websocket.Upgrade(e.Response().Writer, e.Request(), e.Response().Header(), 1<<10, 1<<10)
@@ -131,11 +133,13 @@ func (s *Server) handleSyncSubscribeRepos(e echo.Context) error {
 
 	// we should tell the relay to request a new crawl at this point if we got disconnected
 	// use a new context since the old one might be cancelled at this point
-	ctx, cancel = context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	if err := s.requestCrawl(ctx); err != nil {
-		logger.Error("error requesting crawls", "err", err)
-	}
+	go func() {
+		retryCtx, retryCancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer retryCancel()
+		if err := s.requestCrawl(retryCtx); err != nil {
+			logger.Error("error requesting crawls", "err", err)
+		}
+	}()
 
 	return nil
 }
