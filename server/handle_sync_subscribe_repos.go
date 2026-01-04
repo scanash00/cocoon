@@ -120,6 +120,21 @@ func (s *Server) handleSyncSubscribeRepos(e echo.Context) error {
 	}
 	defer cancel()
 
+	// drop the connection whenever a subscriber disconnects from the socket, we should get errors
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				if _, _, err := conn.ReadMessage(); err != nil {
+					logger.Warn("websocket error", "err", err)
+					cancel()
+					return
+				}
+			}
+		}
+	}()
 	for evt := range evts {
 		func() {
 			if ctx.Err() != nil {
