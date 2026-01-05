@@ -40,6 +40,7 @@ type ParRequest struct {
 	Scope               string  `form:"scope" json:"scope" query:"scope" validate:"required"`
 	LoginHint           *string `form:"login_hint" json:"login_hint,omitempty" query:"login_hint"`
 	DpopJkt             *string `form:"dpop_jkt" json:"dpop_jkt,omitempty" query:"dpop_jkt"`
+	ResponseMode        *string `form:"response_mode" json:"response_mode,omitempty" query:"response_mode"`
 }
 
 func (opr *ParRequest) Scan(value any) error {

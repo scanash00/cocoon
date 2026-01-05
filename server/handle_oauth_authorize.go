@@ -179,8 +179,19 @@ func (s *Server) handleOauthAuthorizePost(e echo.Context) error {
 	q.Set("code", code)
 
 	hashOrQuestion := "?"
-	if authReq.ClientAuth.Method != "private_key_jwt" {
-		hashOrQuestion = "#"
+	if authReq.Parameters.ResponseMode != nil {
+		if *authReq.Parameters.ResponseMode == "fragment" {
+			hashOrQuestion = "#"
+		} else if *authReq.Parameters.ResponseMode == "query" {
+		} else {
+			if authReq.Parameters.ResponseType != "code" {
+				hashOrQuestion = "#"
+			}
+		}
+	} else {
+		if authReq.Parameters.ResponseType != "code" {
+			hashOrQuestion = "#"
+		}
 	}
 
 	return e.Redirect(303, authReq.Parameters.RedirectURI+hashOrQuestion+q.Encode())
