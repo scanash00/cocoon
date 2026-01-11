@@ -2,7 +2,7 @@ package server
 
 import (
 	"strconv"
-	
+
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/haileyok/cocoon/internal/helpers"
 	"github.com/haileyok/cocoon/models"
@@ -25,7 +25,7 @@ func (s *Server) handleSyncListBlobs(e echo.Context) error {
 
 	// cursor is time-based
 	cursor := e.QueryParam("cursor")
-	
+
 	limit := 500
 	if limitStr := e.QueryParam("limit"); limitStr != "" {
 		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 && l <= 1000 {
@@ -65,8 +65,8 @@ func (s *Server) handleSyncListBlobs(e echo.Context) error {
 	for _, b := range blobs {
 		c, err := cid.Cast(b.Cid)
 		if err != nil {
-			s.logger.Error("error casting cid", "error", err)
-			return helpers.ServerError(e, nil)
+			s.logger.Warn("skipping malformed cid in blob list", "error", err, "blob_id", b.ID, "did", b.Did)
+			continue
 		}
 		cstrs = append(cstrs, c.String())
 	}
