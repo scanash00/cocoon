@@ -9,29 +9,29 @@ import (
 )
 
 type Repo struct {
-	Did                              string `gorm:"primaryKey"`
-	CreatedAt                        time.Time
-	Email                            string `gorm:"uniqueIndex"`
-	EmailConfirmedAt                 *time.Time
-	EmailVerificationCode            *string
-	EmailVerificationCodeExpiresAt   *time.Time
-	EmailUpdateCode                  *string
-	EmailUpdateCodeExpiresAt         *time.Time
-	PasswordResetCode                *string
-	PasswordResetCodeExpiresAt       *time.Time
-	PlcOperationCode                 *string
-	PlcOperationCodeExpiresAt        *time.Time
-	AccountDeleteCode                *string
-	AccountDeleteCodeExpiresAt       *time.Time
-	Password                         string
-	SigningKey                       []byte
-	Rev                              string
-	Root                             []byte
-	Preferences                      []byte
-	Deactivated                      bool
-	EmailAuthFactorEnabled           bool
-	EmailAuthFactorCode              *string
-	EmailAuthFactorCodeExpiresAt     *time.Time
+	Did                            string `gorm:"primaryKey"`
+	CreatedAt                      time.Time
+	Email                          string `gorm:"uniqueIndex"`
+	EmailConfirmedAt               *time.Time
+	EmailVerificationCode          *string
+	EmailVerificationCodeExpiresAt *time.Time
+	EmailUpdateCode                *string
+	EmailUpdateCodeExpiresAt       *time.Time
+	PasswordResetCode              *string
+	PasswordResetCodeExpiresAt     *time.Time
+	PlcOperationCode               *string
+	PlcOperationCodeExpiresAt      *time.Time
+	AccountDeleteCode              *string
+	AccountDeleteCodeExpiresAt     *time.Time
+	Password                       string
+	SigningKey                     []byte
+	Rev                            string
+	Root                           []byte
+	Preferences                    []byte
+	Deactivated                    bool
+	EmailAuthFactorEnabled         bool
+	EmailAuthFactorCode            *string
+	EmailAuthFactorCodeExpiresAt   *time.Time
 }
 
 func (r *Repo) SignFor(ctx context.Context, did string, msg []byte) ([]byte, error) {
@@ -131,8 +131,8 @@ type ReservedKey struct {
 }
 
 type AppPassword struct {
-	Name       string    `gorm:"primaryKey"`
-	Did        string    `gorm:"primaryKey;index"`
+	Name       string `gorm:"primaryKey"`
+	Did        string `gorm:"primaryKey;index"`
 	Password   string
 	Privileged bool
 	CreatedAt  time.Time

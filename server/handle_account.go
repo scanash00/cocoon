@@ -85,7 +85,7 @@ func (s *Server) handleAccount(e echo.Context) error {
 		Name     string
 		Sessions []Session
 	}
-	
+
 	now := time.Now()
 
 	groupsMap := make(map[string][]Session)
@@ -121,7 +121,7 @@ func (s *Server) handleAccount(e echo.Context) error {
 		if n, ok := clientNames[clientId]; ok {
 			name = n
 		}
-		
+
 		clientGroups = append(clientGroups, ClientGroup{
 			ID:       clientId,
 			Name:     name,
@@ -137,5 +137,6 @@ func (s *Server) handleAccount(e echo.Context) error {
 		"Repo":         repo,
 		"ClientGroups": clientGroups,
 		"flashes":      getFlashesFromSession(e, sess),
+		"AvatarURL":    s.getAvatarURL(ctx, repo.Repo.Did),
 	})
 }

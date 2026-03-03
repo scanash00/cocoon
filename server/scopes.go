@@ -8,6 +8,12 @@ type scopeInfo struct {
 	Name        string
 	Description string
 	Icon        string
+	// Permission-set specific fields (populated for NSID-style scopes)
+	IsPermSet   bool
+	PermNSID    string // original NSID, set after resolving title
+	PermDetail  string
+	PermGroups  []PermGroupDisplay
+	FetchFailed bool
 }
 
 var scopeDescriptions = map[string]scopeInfo{
@@ -33,7 +39,7 @@ var scopeDescriptions = map[string]scopeInfo{
 	},
 }
 
-func (s *Server) parseScopeForDisplay(scope string) scopeInfo {
+func parseScopeForDisplay(scope string) scopeInfo {
 	if info, ok := scopeDescriptions[scope]; ok {
 		return info
 	}
@@ -228,6 +234,15 @@ func (s *Server) parseScopeForDisplay(scope string) scopeInfo {
 		}
 	}
 
+	// NSID-style permission-set scopes (e.g. "at.margin.authFull")
+	if isPermSetScope(scope) {
+		return scopeInfo{
+			Name:      scope,
+			Icon:      "package",
+			IsPermSet: true,
+		}
+	}
+
 	return scopeInfo{
 		Name:        scope,
 		Description: "",
@@ -235,12 +250,16 @@ func (s *Server) parseScopeForDisplay(scope string) scopeInfo {
 	}
 }
 
+// parseScopeForDisplayWithNSID is parseScopeForDisplay for use in splitScopes
+// which handles NSID permission-set enrichment separately.
+var parseScopeForDisplayWithNSID = parseScopeForDisplay
+
 func (s *Server) groupScopes(scopes []string) []scopeInfo {
 	seen := make(map[string]bool)
 	var result []scopeInfo
 
 	for _, scope := range scopes {
-		info := s.parseScopeForDisplay(scope)
+		info := parseScopeForDisplay(scope)
 
 		key := info.Name
 		if seen[key] {

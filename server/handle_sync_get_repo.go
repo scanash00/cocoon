@@ -1,10 +1,8 @@
 package server
 
 import (
-
-
-	"github.com/bluesky-social/indigo/carstore"
 	"github.com/Azure/go-autorest/autorest/to"
+	"github.com/bluesky-social/indigo/carstore"
 	"github.com/haileyok/cocoon/internal/helpers"
 	"github.com/ipfs/go-cid"
 	cbor "github.com/ipfs/go-ipld-cbor"
@@ -58,7 +56,7 @@ func (s *Server) handleSyncGetRepo(e echo.Context) error {
 			s.logger.Error("error scanning block", "error", err)
 			continue
 		}
-		
+
 		c, err := cid.Cast(bCid)
 		if err != nil {
 			continue

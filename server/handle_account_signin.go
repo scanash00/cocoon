@@ -51,6 +51,7 @@ func getFlashesFromSession(e echo.Context, sess *sessions.Session) map[string]an
 }
 
 func (s *Server) handleAccountSigninGet(e echo.Context) error {
+	ctx := e.Request().Context()
 	_, sess, err := s.getSessionRepoOrErr(e)
 	if err == nil {
 		return e.Redirect(303, "/account")
@@ -59,6 +60,7 @@ func (s *Server) handleAccountSigninGet(e echo.Context) error {
 	return e.Render(200, "signin.html", map[string]any{
 		"flashes":     getFlashesFromSession(e, sess),
 		"QueryParams": e.QueryParams().Encode(),
+		"Accounts":    s.getLocalAccounts(ctx, 8),
 	})
 }
 

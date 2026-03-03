@@ -35,7 +35,7 @@ func (s *Server) handleOauthAuthorizeGet(e echo.Context) error {
 			// render page for logged out dev
 			if s.config.Version == "dev" && parRequest.ClientID == "" {
 				return e.Render(200, "authorize.html", map[string]any{
-					"Scopes":     []string{"atproto", "transition:generic"},
+					"Scopes":     splitScopes(ctx, s.http, []string{"atproto", "transition:generic"}),
 					"AppName":    "DEV MODE AUTHORIZATION PAGE",
 					"Handle":     "paula.cocoon.social",
 					"RequestUri": "",
@@ -106,12 +106,13 @@ func (s *Server) handleOauthAuthorizeGet(e echo.Context) error {
 	appName := client.Metadata.ClientName
 
 	data := map[string]any{
-		"Scopes":      s.groupScopes(scopes),
+		"Scopes":      splitScopes(ctx, s.http, scopes),
 		"AppName":     appName,
 		"AppLogo":     client.Metadata.LogoURI,
 		"RequestUri":  reqUri,
 		"QueryParams": e.QueryParams().Encode(),
 		"Handle":      repo.Actor.Handle,
+		"AvatarURL":   s.getAvatarURL(ctx, repo.Repo.Did),
 	}
 
 	return e.Render(200, "authorize.html", data)

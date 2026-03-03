@@ -8,11 +8,11 @@ import (
 	"io"
 	"time"
 
+	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/bluesky-social/indigo/api/atproto"
 	"github.com/bluesky-social/indigo/atproto/atdata"
 	"github.com/bluesky-social/indigo/atproto/lexicon"
@@ -345,13 +345,13 @@ func (rm *RepoMan) applyWrites(ctx context.Context, urepo models.Repo, writes []
 
 	// blob blob blob blob blob :3
 	var blobs []lexutil.LexLink
-	
+
 	// Process creates and updates, these have CID set
 	for _, entry := range entries {
 		if entry.Cid == "" {
 			continue // Skip delete entries, handled below
 		}
-		
+
 		if err := rm.s.db.Create(ctx, &entry, []clause.Expression{clause.OnConflict{
 			Columns:   []clause.Column{{Name: "did"}, {Name: "nsid"}, {Name: "rkey"}},
 			UpdateAll: true,
@@ -374,7 +374,7 @@ func (rm *RepoMan) applyWrites(ctx context.Context, urepo models.Repo, writes []
 		if entry.Cid != "" {
 			continue // Skip create/update entries, handled above
 		}
-		
+
 		if err := rm.s.db.Delete(ctx, &entry, nil).Error; err != nil {
 			return nil, err
 		}

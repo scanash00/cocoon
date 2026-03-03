@@ -1,7 +1,7 @@
 # Cocoon
 
 > [!WARNING]
-I migrated and have been running my main account on this PDS for months now without issue, however, I am still not responsible if things go awry, particularly during account migration. Please use caution.
+> I migrated and have been running my main account on this PDS for months now without issue, however, I am still not responsible if things go awry, particularly during account migration. Please use caution.
 
 Cocoon is a PDS implementation in Go. It is highly experimental, and is not ready for any production use.
 
@@ -16,12 +16,14 @@ Cocoon is a PDS implementation in Go. It is highly experimental, and is not read
 ### Installation
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/haileyok/cocoon.git
    cd cocoon
    ```
 
 2. **Create your configuration file**
+
    ```bash
    cp .env.example .env
    ```
@@ -29,6 +31,7 @@ Cocoon is a PDS implementation in Go. It is highly experimental, and is not read
 3. **Edit `.env` with your settings**
 
    Required settings:
+
    ```bash
    COCOON_DID="did:web:your-domain.com"
    COCOON_HOSTNAME="your-domain.com"
@@ -43,6 +46,7 @@ Cocoon is a PDS implementation in Go. It is highly experimental, and is not read
    ```
 
 4. **Start the services**
+
    ```bash
    # Pull pre-built image from GitHub Container Registry
    docker-compose pull
@@ -50,12 +54,14 @@ Cocoon is a PDS implementation in Go. It is highly experimental, and is not read
    ```
 
    Or build locally:
+
    ```bash
    docker-compose build
    docker-compose up -d
    ```
 
    **For PostgreSQL deployment:**
+
    ```bash
    # Add POSTGRES_PASSWORD to your .env file first!
    docker-compose -f docker-compose.postgres.yaml up -d
@@ -64,11 +70,13 @@ Cocoon is a PDS implementation in Go. It is highly experimental, and is not read
 5. **Get your invite code**
 
    On first run, an invite code is automatically created. View it with:
+
    ```bash
    docker-compose logs create-invite
    ```
 
    Or check the saved file:
+
    ```bash
    cat keys/initial-invite-code.txt
    ```
@@ -119,6 +127,7 @@ DATABASE_URL="postgres://cocoon:password@localhost:5432/cocoon?sslmode=disable"
 ```
 
 For SQLite (default):
+
 ```bash
 COCOON_DB_TYPE="sqlite"
 COCOON_DB_NAME="/data/cocoon/cocoon.db"
@@ -127,6 +136,7 @@ COCOON_DB_NAME="/data/cocoon/cocoon.db"
 > **Note**: When using PostgreSQL, database backups to S3 are not handled by Cocoon. Use `pg_dump` or your database provider's backup solution instead.
 
 #### SMTP Email Settings
+
 ```bash
 COCOON_SMTP_USER="your-smtp-username"
 COCOON_SMTP_PASS="your-smtp-password"
@@ -161,10 +171,12 @@ COCOON_S3_CDN_URL="https://cdn.example.com"
 ```
 
 **Blob Storage Options:**
+
 - `COCOON_S3_BLOBSTORE_ENABLED=false` (default): Blobs stored in the database
 - `COCOON_S3_BLOBSTORE_ENABLED=true`: Blobs stored in S3 bucket under `blobs/{did}/{cid}`
 
 **Blob Serving Options:**
+
 - Without `COCOON_S3_CDN_URL`: Blobs are proxied through the PDS server
 - With `COCOON_S3_CDN_URL`: `getBlob` returns a 302 redirect to `{CDN_URL}/blobs/{did}/{cid}`
 
@@ -173,11 +185,13 @@ COCOON_S3_CDN_URL="https://cdn.example.com"
 ### Management Commands
 
 Create an invite code:
+
 ```bash
 docker exec cocoon-pds /cocoon create-invite-code --uses 1
 ```
 
 Reset a user's password:
+
 ```bash
 docker exec cocoon-pds /cocoon reset-password --did "did:plc:xxx"
 ```
@@ -199,6 +213,7 @@ docker-compose up -d
 Tracking error handling, validation, and proper ATProto error codes. Items marked with `[x]` have been reviewed and improved.
 
 #### Identity
+
 - [x] `com.atproto.identity.getRecommendedDidCredentials`
 - [x] `com.atproto.identity.requestPlcOperationSignature`
 - [x] `com.atproto.identity.resolveHandle`
@@ -207,6 +222,7 @@ Tracking error handling, validation, and proper ATProto error codes. Items marke
 - [x] `com.atproto.identity.updateHandle`
 
 #### Repo
+
 - [x] `com.atproto.repo.applyWrites`
 - [x] `com.atproto.repo.createRecord`
 - [x] `com.atproto.repo.putRecord`
@@ -219,6 +235,7 @@ Tracking error handling, validation, and proper ATProto error codes. Items marke
 - [x] `com.atproto.repo.uploadBlob`
 
 #### Server
+
 - [x] `com.atproto.server.activateAccount`
 - [x] `com.atproto.server.checkAccountStatus`
 - [x] `com.atproto.server.confirmEmail`
@@ -245,6 +262,7 @@ Tracking error handling, validation, and proper ATProto error codes. Items marke
 - [x] `com.atproto.server.updateEmail`
 
 #### Sync
+
 - [x] `com.atproto.sync.getBlob`
 - [x] `com.atproto.sync.getBlocks`
 - [x] `com.atproto.sync.getLatestCommit`
@@ -256,10 +274,10 @@ Tracking error handling, validation, and proper ATProto error codes. Items marke
 - [x] `com.atproto.sync.subscribeRepos`
 
 #### Other
+
 - [x] `com.atproto.label.queryLabels`
 - [x] `app.bsky.actor.getPreferences`
 - [x] `app.bsky.actor.putPreferences`
-
 
 - [x] `com.atproto.identity.getRecommendedDidCredentials`
 - [x] `com.atproto.identity.requestPlcOperationSignature`
@@ -294,7 +312,7 @@ Tracking error handling, validation, and proper ATProto error codes. Items marke
 - [x] `com.atproto.server.describeServer`
 - [ ] `com.atproto.server.getAccountInviteCodes`
 - [x] `com.atproto.server.getServiceAuth`
-- [x] `com.atproto.server.listAppPasswords` -  willy wonka
+- [x] `com.atproto.server.listAppPasswords` - willy wonka
 - [x] `com.atproto.server.refreshSession`
 - [x] `com.atproto.server.requestAccountDelete`
 - [x] `com.atproto.server.requestEmailConfirmation`

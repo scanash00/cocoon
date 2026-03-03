@@ -7,7 +7,7 @@ on:
       - main
       - scan-fork
     tags:
-      - 'v*'
+      - "v*"
 
 env:
   REGISTRY: ghcr.io

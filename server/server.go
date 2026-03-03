@@ -86,9 +86,9 @@ type Server struct {
 	lastRequestCrawl time.Time
 	requestCrawlMu   sync.Mutex
 
-	dbName        string
-	dbType        string
-	s3Config      *S3Config
+	dbName         string
+	dbType         string
+	s3Config       *S3Config
 	lexiconCatalog *lexicon.BaseCatalog
 }
 
@@ -465,7 +465,7 @@ func (s *Server) addRoutes() {
 	s.echo.GET("/xrpc/com.atproto.server.describeServer", s.handleDescribeServer)
 	s.echo.POST("/xrpc/com.atproto.server.reserveSigningKey", s.handleServerReserveSigningKey)
 	authRateLimiter := middleware.RateLimiter(middleware.NewRateLimiterMemoryStore(5))
-	strictRateLimiter := middleware.RateLimiter(middleware.NewRateLimiterMemoryStore(1))	
+	strictRateLimiter := middleware.RateLimiter(middleware.NewRateLimiterMemoryStore(1))
 	s.echo.POST("/xrpc/com.atproto.server.createAccount", s.handleCreateAccount, strictRateLimiter)
 	s.echo.POST("/xrpc/com.atproto.server.createSession", s.handleCreateSession, authRateLimiter)
 

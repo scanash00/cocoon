@@ -9,14 +9,14 @@ type Provider struct {
 	ClientManager *client.Manager
 	DpopManager   *dpop.Manager
 
-	hostname           string
+	hostname            string
 	SupportedGrantTypes []string
 }
 
 type Args struct {
-	Hostname          string
-	ClientManagerArgs client.ManagerArgs
-	DpopManagerArgs   dpop.ManagerArgs
+	Hostname            string
+	ClientManagerArgs   client.ManagerArgs
+	DpopManagerArgs     dpop.ManagerArgs
 	SupportedGrantTypes []string
 }
 
@@ -27,9 +27,9 @@ func NewProvider(args Args) *Provider {
 	}
 
 	return &Provider{
-		ClientManager:      client.NewManager(args.ClientManagerArgs),
-		DpopManager:        dpop.NewManager(args.DpopManagerArgs),
-		hostname:           args.Hostname,
+		ClientManager:       client.NewManager(args.ClientManagerArgs),
+		DpopManager:         dpop.NewManager(args.DpopManagerArgs),
+		hostname:            args.Hostname,
 		SupportedGrantTypes: grantTypes,
 	}
 }

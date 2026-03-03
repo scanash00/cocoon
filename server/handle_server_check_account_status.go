@@ -27,9 +27,9 @@ func (s *Server) handleServerCheckAccountStatus(e echo.Context) error {
 	}
 
 	resp := ComAtprotoServerCheckAccountStatusResponse{
-		Activated:     !urepo.Deactivated,
-		ValidDid:      true,
-		RepoRev:       urepo.Rev,
+		Activated: !urepo.Deactivated,
+		ValidDid:  true,
+		RepoRev:   urepo.Rev,
 	}
 
 	rootcid, err := cid.Cast(urepo.Root)

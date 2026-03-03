@@ -1,153 +1,198 @@
 <!doctype html>
 <html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <link rel="stylesheet" href="/static/style.css" />
+    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml" />
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <title>Your Account</title>
+  </head>
 
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="color-scheme" content="dark" />
-  <link rel="stylesheet" href="/static/style.css" />
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <title>Your Account</title>
-</head>
-
-<body class="page-centered">
-  <main class="container container-wide">
-    <div class="section-header">
-      <h2>Welcome, {{ .Repo.Handle }}</h2>
-      <p>Manage your account and connected applications.</p>
-    </div>
-
-    <ul class="nav-links">
-      <li>
-        <a href="/account/signout">
-          <i data-lucide="log-out"></i>
-          Sign Out
-        </a>
-      </li>
-    </ul>
-
-    {{ if .flashes.successes }}
-    <div class="alert alert-success">
-      <p>{{ index .flashes.successes 0 }}</p>
-    </div>
-    {{ end }}
-
-    <div class="divider"></div>
-
-    <div class="section" style="margin-bottom: 2rem;">
-      <h3>Connected Applications</h3>
-      <p class="text-small text-muted">Apps that have access to your account.</p>
-
-      <div style="margin-top: 1rem;">
-        <input type="text" id="searchInput" placeholder="Search sessions (app name, IP, etc)..." style="width: 100%;">
-      </div>
-    </div>
-
-    {{ if eq (len .ClientGroups) 0 }}
-    <div class="empty-state">
-      <i data-lucide="check-circle" class="empty-state-icon"></i>
-      <h3>No active sessions</h3>
-      <p>You don't have any connected applications.</p>
-    </div>
-    {{ else }}
-
-    <div id="groupsContainer">
-      {{ range .ClientGroups }}
-      <div class="client-group">
-        <div class="group-header"
-          style="margin-top: 1.5rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.5rem;">
-          <h3 style="margin: 0; font-size: 1.125rem; color: var(--text-primary);">
-            {{ .Name }} <span
-              style="color: var(--text-muted); font-weight: normal; font-size: 0.875rem; margin-left: 0.5rem;">({{ len
-              .Sessions }} sessions)</span>
-          </h3>
-          <form action="/account/revoke" method="post" style="margin: 0;">
-            <input type="hidden" name="client_id" value="{{ .ID }}" />
-            <button type="submit" class="btn btn-sm btn-ghost"
-              style="color: var(--danger); background-color: transparent;"
-              onclick="return confirm('Are you sure you want to revoke all sessions for {{ .Name }}?');">Revoke
-              All</button>
-          </form>
-        </div>
-
-        <div class="group-sessions">
-          {{ range .Sessions }}
-          <div class="panel">
-            <div class="panel-header">
-              <h4 style="font-size: 1rem;">{{ .ClientName }}</h4>
-              <form action="/account/revoke" method="post" style="margin: 0;">
-                <input type="hidden" name="token" value="{{ .Token }}" />
-                <button type="submit" class="btn-ghost btn-sm">Revoke</button>
-              </form>
-            </div>
-            <div class="panel-content">
-              <div class="panel-row">
-                <span class="label">Session Age</span>
-                <span class="value">{{ .Age }}</span>
-              </div>
-              <div class="panel-row">
-                <span class="label">Last Updated</span>
-                <span class="value">{{ .LastUpdated }} ago</span>
-              </div>
-              <div class="panel-row">
-                <span class="label">Expires In</span>
-                <span class="value">{{ .ExpiresIn }}</span>
-              </div>
-              <div class="panel-row">
-                <span class="label">IP Address</span>
-                <span class="value">{{ .Ip }}</span>
-              </div>
-            </div>
-          </div>
+  <body class="page-centered">
+    <main class="container container-wide">
+      <div class="section-header">
+        <div class="account-page-hero">
+          {{ if .AvatarURL }}
+          <img
+            src="{{ .AvatarURL }}"
+            alt="{{ .Repo.Handle }}"
+            class="user-avatar user-avatar-lg"
+          />
+          {{ else }}
+          <span class="user-avatar user-avatar-lg user-avatar-placeholder"
+            ><i data-lucide="user" style="width: 28px; height: 28px"></i
+          ></span>
           {{ end }}
+          <div>
+            <h2>{{ .Repo.Handle }}</h2>
+            <p>Manage your account and connected applications.</p>
+          </div>
         </div>
+      </div>
+
+      <ul class="nav-links">
+        <li>
+          <a href="/account/signout">
+            <i data-lucide="log-out"></i>
+            Sign Out
+          </a>
+        </li>
+      </ul>
+
+      {{ if .flashes.successes }}
+      <div class="alert alert-success">
+        <p>{{ index .flashes.successes 0 }}</p>
       </div>
       {{ end }}
-    </div>
 
-    <div id="noResults" class="empty-state" style="display: none;">
-      <i data-lucide="search" class="empty-state-icon"></i>
-      <h3>No matches found</h3>
-      <p>Try searching for a different term.</p>
-    </div>
-    {{ end }}
-  </main>
+      <div class="divider"></div>
 
-  <script>
-    lucide.createIcons();
+      <div class="section" style="margin-bottom: 2rem">
+        <h3>Connected Applications</h3>
+        <p class="text-small text-muted">
+          Apps that have access to your account.
+        </p>
 
-    const searchInput = document.getElementById('searchInput');
-    if (searchInput) {
-      searchInput.addEventListener('input', (e) => {
-        const term = e.target.value.toLowerCase().trim();
-        const groups = document.querySelectorAll('.client-group');
-        let totalVisible = 0;
+        <div style="margin-top: 1rem">
+          <input
+            type="text"
+            id="searchInput"
+            placeholder="Search sessions (app name, IP, etc)..."
+            style="width: 100%"
+          />
+        </div>
+      </div>
 
-        groups.forEach(group => {
-          let groupHasVisible = false;
-          const panels = group.querySelectorAll('.panel');
+      {{ if eq (len .ClientGroups) 0 }}
+      <div class="empty-state">
+        <i data-lucide="check-circle" class="empty-state-icon"></i>
+        <h3>No active sessions</h3>
+        <p>You don't have any connected applications.</p>
+      </div>
+      {{ else }}
 
-          panels.forEach(panel => {
-            const text = panel.textContent.toLowerCase();
-            if (text.includes(term)) {
-              panel.style.display = 'block';
-              groupHasVisible = true;
-              totalVisible++;
-            } else {
-              panel.style.display = 'none';
-            }
+      <div id="groupsContainer">
+        {{ range .ClientGroups }}
+        <div class="client-group">
+          <div
+            class="group-header"
+            style="
+              margin-top: 1.5rem;
+              margin-bottom: 1rem;
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              border-bottom: 1px solid var(--border-subtle);
+              padding-bottom: 0.5rem;
+            "
+          >
+            <h3
+              style="margin: 0; font-size: 1.125rem; color: var(--text-primary)"
+            >
+              {{ .Name }}
+              <span
+                style="
+                  color: var(--text-muted);
+                  font-weight: normal;
+                  font-size: 0.875rem;
+                  margin-left: 0.5rem;
+                "
+                >({{ len .Sessions }} sessions)</span
+              >
+            </h3>
+            <form action="/account/revoke" method="post" style="margin: 0">
+              <input type="hidden" name="client_id" value="{{ .ID }}" />
+              <button
+                type="submit"
+                class="btn btn-sm btn-ghost"
+                style="color: var(--danger); background-color: transparent"
+                onclick="return confirm('Are you sure you want to revoke all sessions for {{ .Name }}?');"
+              >
+                Revoke All
+              </button>
+            </form>
+          </div>
+
+          <div class="group-sessions">
+            {{ range .Sessions }}
+            <div class="panel">
+              <div class="panel-header">
+                <h4 style="font-size: 1rem">{{ .ClientName }}</h4>
+                <form action="/account/revoke" method="post" style="margin: 0">
+                  <input type="hidden" name="token" value="{{ .Token }}" />
+                  <button type="submit" class="btn-ghost btn-sm">Revoke</button>
+                </form>
+              </div>
+              <div class="panel-content">
+                <div class="panel-row">
+                  <span class="label">Session Age</span>
+                  <span class="value">{{ .Age }}</span>
+                </div>
+                <div class="panel-row">
+                  <span class="label">Last Updated</span>
+                  <span class="value">{{ .LastUpdated }} ago</span>
+                </div>
+                <div class="panel-row">
+                  <span class="label">Expires In</span>
+                  <span class="value">{{ .ExpiresIn }}</span>
+                </div>
+                <div class="panel-row">
+                  <span class="label">IP Address</span>
+                  <span class="value">{{ .Ip }}</span>
+                </div>
+              </div>
+            </div>
+            {{ end }}
+          </div>
+        </div>
+        {{ end }}
+      </div>
+
+      <div id="noResults" class="empty-state" style="display: none">
+        <i data-lucide="search" class="empty-state-icon"></i>
+        <h3>No matches found</h3>
+        <p>Try searching for a different term.</p>
+      </div>
+      {{ end }}
+    </main>
+
+    <script>
+      lucide.createIcons();
+
+      const searchInput = document.getElementById("searchInput");
+      if (searchInput) {
+        searchInput.addEventListener("input", (e) => {
+          const term = e.target.value.toLowerCase().trim();
+          const groups = document.querySelectorAll(".client-group");
+          let totalVisible = 0;
+
+          groups.forEach((group) => {
+            let groupHasVisible = false;
+            const panels = group.querySelectorAll(".panel");
+
+            panels.forEach((panel) => {
+              const text = panel.textContent.toLowerCase();
+              if (text.includes(term)) {
+                panel.style.display = "block";
+                groupHasVisible = true;
+                totalVisible++;
+              } else {
+                panel.style.display = "none";
+              }
+            });
+
+            group.style.display = groupHasVisible ? "block" : "none";
           });
 
-          group.style.display = groupHasVisible ? 'block' : 'none';
+          const noResults = document.getElementById("noResults");
+          if (noResults) {
+            noResults.style.display =
+              totalVisible === 0 && term !== "" ? "block" : "none";
+          }
         });
-
-        const noResults = document.getElementById('noResults');
-        if (noResults) {
-          noResults.style.display = (totalVisible === 0 && term !== '') ? 'block' : 'none';
-        }
-      });
-    }
-  </script>
-</body>
-
+      }
+    </script>
+  </body>
 </html>

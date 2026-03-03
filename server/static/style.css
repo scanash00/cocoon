@@ -27,8 +27,9 @@
   --warning-bg: rgba(245, 158, 11, 0.1);
   --warning-border: rgba(245, 158, 11, 0.3);
 
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  --font-sans:
+    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", monospace;
 
   --radius-sm: 6px;
   --radius-md: 8px;
@@ -42,7 +43,7 @@
   --transition-normal: 200ms ease;
 }
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
 
 *,
 *::before,
@@ -161,7 +162,7 @@ a:hover {
   padding: 1.5rem;
 }
 
-.panel+.panel {
+.panel + .panel {
   margin-top: 1rem;
 }
 
@@ -225,7 +226,9 @@ input[type="email"] {
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   outline: none;
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
 }
 
 input[type="text"]::placeholder,
@@ -380,6 +383,88 @@ button.secondary:hover {
   color: var(--text-primary);
 }
 
+/* Permission-set cards expand vertically and stack their content */
+.perm-set-card {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.75rem;
+}
+
+.perm-set-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.perm-nsid {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  display: block;
+  margin-top: 0.1rem;
+}
+
+.perm-fetch-failed {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.perm-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  /* indent to align with text after the leading icon */
+  padding-left: calc(20px + 0.75rem);
+}
+
+.perm-group {
+  font-size: 0.875rem;
+}
+
+.perm-group-label {
+  margin-bottom: 0.25rem;
+  color: var(--text-secondary);
+}
+
+.perm-group-label code {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  color: var(--text-primary);
+}
+
+.perm-collections summary {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.8125rem;
+  color: var(--accent-primary);
+  list-style: none;
+  user-select: none;
+}
+
+.perm-collections summary:hover {
+  text-decoration: underline;
+}
+
+.perm-collections summary::-webkit-details-marker {
+  display: none;
+}
+
+.perm-collections ul {
+  list-style: none;
+  padding: 0.375rem 0 0 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.perm-collections li code {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
 .scope-text {
   display: flex;
   flex-direction: column;
@@ -449,6 +534,114 @@ button.secondary:hover {
   font-size: 0.8125rem;
   font-weight: 500;
   color: var(--text-primary);
+}
+
+/* User avatar (circular image or icon placeholder) */
+.user-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 9999px;
+  object-fit: cover;
+  border: 2px solid var(--border-subtle);
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+}
+
+.user-avatar-lg {
+  width: 56px;
+  height: 56px;
+}
+
+.user-avatar-placeholder {
+  background-color: var(--bg-elevated);
+  color: var(--text-muted);
+}
+
+/* "Signed in as" row on the authorize page */
+.signed-in-as {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-secondary);
+  font-size: 0.9375rem;
+}
+
+/* Account page hero (avatar + name stack) */
+.account-page-hero {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.25rem;
+}
+
+.account-page-hero h2 {
+  margin-bottom: 0.125rem;
+}
+
+.account-page-hero p {
+  margin-bottom: 0;
+}
+
+/* Sign-in account picker */
+.account-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.625rem;
+  margin-bottom: 1.25rem;
+}
+
+.account-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.625rem 0.75rem;
+  background-color: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition:
+    border-color var(--transition-fast),
+    background-color var(--transition-fast);
+  min-width: 72px;
+  max-width: 96px;
+}
+
+.account-tile:hover {
+  border-color: var(--accent-primary);
+  background-color: var(--bg-hover);
+}
+
+.account-tile .account-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 9999px;
+  object-fit: cover;
+  border: 2px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.account-tile .account-avatar-placeholder {
+  background-color: var(--bg-primary);
+  color: var(--text-muted);
+  width: 40px;
+  height: 40px;
+}
+
+.account-handle {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  max-width: 80px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
 }
 
 .link-row {

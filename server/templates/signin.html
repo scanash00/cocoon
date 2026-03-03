@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="dark" />
     <link rel="stylesheet" href="/static/style.css" />
+    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml" />
+    <script src="https://unpkg.com/lucide@latest"></script>
     <title>Sign In</title>
   </head>
   <body class="page-centered">
@@ -14,7 +16,27 @@
         <p>Enter your handle and password to continue.</p>
       </div>
 
-      {{ if .flashes.errors }}
+      {{ if .Accounts }}
+      <div class="account-picker">
+        {{ range .Accounts }}
+        <button type="button" class="account-tile" data-handle="{{ .Handle }}">
+          {{ if .AvatarURL }}
+          <img
+            src="{{ .AvatarURL }}"
+            alt="{{ .Handle }}"
+            class="account-avatar"
+          />
+          {{ else }}
+          <div class="account-avatar account-avatar-placeholder">
+            <i data-lucide="user"></i>
+          </div>
+          {{ end }}
+          <span class="account-handle">{{ .Handle }}</span>
+        </button>
+        {{ end }}
+      </div>
+      <div class="divider"></div>
+      {{ end }} {{ if .flashes.errors }}
       <div class="alert alert-danger">
         <p>{{ index .flashes.errors 0 }}</p>
       </div>
@@ -23,11 +45,11 @@
       <form action="/account/signin" method="post">
         <div>
           <label for="username">Handle</label>
-          <input 
-            type="text" 
-            name="username" 
-            id="username" 
-            placeholder="your.handle" 
+          <input
+            type="text"
+            name="username"
+            id="username"
+            placeholder="your.handle"
             autocomplete="username"
             autofocus
           />
@@ -51,5 +73,14 @@
         </div>
       </form>
     </main>
+    <script>
+      lucide.createIcons();
+      document.querySelectorAll(".account-tile").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          document.getElementById("username").value = btn.dataset.handle;
+          document.getElementById("password").focus();
+        });
+      });
+    </script>
   </body>
 </html>

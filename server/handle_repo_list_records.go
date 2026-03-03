@@ -1,8 +1,6 @@
 package server
 
 import (
-
-
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/bluesky-social/indigo/atproto/atdata"
 	"github.com/bluesky-social/indigo/atproto/syntax"
@@ -30,8 +28,6 @@ type ComAtprotoRepoListRecordsRecordItem struct {
 	Value map[string]any `json:"value"`
 }
 
-
-
 func (s *Server) handleListRecords(e echo.Context) error {
 	ctx := e.Request().Context()
 	logger := s.logger.With("name", "handleListRecords")
@@ -55,7 +51,7 @@ func (s *Server) handleListRecords(e echo.Context) error {
 	sort := "DESC"
 	dir := "<"
 	cursorquery := ""
-	
+
 	if req.Reverse {
 		sort = "ASC"
 		dir = ">"

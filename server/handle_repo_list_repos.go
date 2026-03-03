@@ -2,7 +2,7 @@ package server
 
 import (
 	"strconv"
-	
+
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/haileyok/cocoon/internal/helpers"
 	"github.com/haileyok/cocoon/models"

@@ -5,11 +5,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/bluesky-social/indigo/api/atproto"
 	"github.com/bluesky-social/indigo/atproto/atcrypto"
 	"github.com/bluesky-social/indigo/events"
 	"github.com/bluesky-social/indigo/util"
-	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/haileyok/cocoon/internal/helpers"
 	"github.com/haileyok/cocoon/plc"
 	"github.com/labstack/echo/v4"
@@ -72,7 +72,8 @@ func (s *Server) handleSubmitPlcOperation(e echo.Context) error {
 	}
 
 	if err := s.plcClient.SendOperation(e.Request().Context(), repo.Repo.Did, &op); err != nil {
-		s.logger.Error("error sending plc operation", "error", err); return helpers.ServerError(e, nil)
+		s.logger.Error("error sending plc operation", "error", err)
+		return helpers.ServerError(e, nil)
 	}
 
 	if err := s.passport.BustDoc(e.Request().Context(), repo.Repo.Did); err != nil {
