@@ -6,7 +6,6 @@
     <meta name="color-scheme" content="dark" />
     <link rel="stylesheet" href="/static/style.css" />
     <link rel="icon" href="/static/favicon.svg" type="image/svg+xml" />
-    <script src="https://unpkg.com/lucide@latest"></script>
     <title>Sign In</title>
   </head>
   <body class="page-centered">
@@ -16,27 +15,7 @@
         <p>Enter your handle and password to continue.</p>
       </div>
 
-      {{ if .Accounts }}
-      <div class="account-picker">
-        {{ range .Accounts }}
-        <button type="button" class="account-tile" data-handle="{{ .Handle }}">
-          {{ if .AvatarURL }}
-          <img
-            src="{{ .AvatarURL }}"
-            alt="{{ .Handle }}"
-            class="account-avatar"
-          />
-          {{ else }}
-          <div class="account-avatar account-avatar-placeholder">
-            <i data-lucide="user"></i>
-          </div>
-          {{ end }}
-          <span class="account-handle">{{ .Handle }}</span>
-        </button>
-        {{ end }}
-      </div>
-      <div class="divider"></div>
-      {{ end }} {{ if .flashes.errors }}
+      {{ if .flashes.errors }}
       <div class="alert alert-danger">
         <p>{{ index .flashes.errors 0 }}</p>
       </div>
@@ -45,14 +24,20 @@
       <form action="/account/signin" method="post">
         <div>
           <label for="username">Handle</label>
-          <input
-            type="text"
-            name="username"
-            id="username"
-            placeholder="your.handle"
-            autocomplete="username"
-            autofocus
-          />
+          <div class="handle-input-wrap">
+            <input
+              type="text"
+              name="username"
+              id="username"
+              placeholder="your.handle"
+              autocomplete="username"
+              autofocus
+            />
+            <div id="handle-suggestion" class="handle-suggestion" style="display:none;">
+              <img id="suggestion-avatar" class="user-avatar" alt="" />
+              <span id="suggestion-handle" class="suggestion-handle-text"></span>
+            </div>
+          </div>
         </div>
 
         <div>
@@ -74,13 +59,53 @@
       </form>
     </main>
     <script>
-      lucide.createIcons();
-      document.querySelectorAll(".account-tile").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          document.getElementById("username").value = btn.dataset.handle;
-          document.getElementById("password").focus();
-        });
+      const usernameInput = document.getElementById('username');
+      const suggestion = document.getElementById('handle-suggestion');
+      const suggestionAvatar = document.getElementById('suggestion-avatar');
+      const suggestionHandle = document.getElementById('suggestion-handle');
+      let debounceTimer = null;
+
+      usernameInput.addEventListener('input', () => {
+        clearTimeout(debounceTimer);
+        const val = usernameInput.value.trim();
+        if (!val || val.length < 3) {
+          suggestion.style.display = 'none';
+          return;
+        }
+        debounceTimer = setTimeout(() => fetchProfile(val), 400);
       });
+
+      async function fetchProfile(handle) {
+        try {
+          const resolveRes = await fetch('/xrpc/com.atproto.identity.resolveHandle?handle=' + encodeURIComponent(handle));
+          if (!resolveRes.ok) { suggestion.style.display = 'none'; return; }
+          const { did } = await resolveRes.json();
+
+          const recordRes = await fetch(
+            '/xrpc/com.atproto.repo.getRecord?repo=' + encodeURIComponent(did) +
+            '&collection=app.bsky.actor.profile&rkey=self'
+          );
+
+          suggestionHandle.textContent = handle;
+
+          if (recordRes.ok) {
+            const record = await recordRes.json();
+            const avatarRef = record?.value?.avatar?.ref?.$link;
+            if (avatarRef) {
+              suggestionAvatar.src = '/xrpc/com.atproto.sync.getBlob?did=' + encodeURIComponent(did) + '&cid=' + encodeURIComponent(avatarRef);
+              suggestionAvatar.style.display = 'inline-block';
+            } else {
+              suggestionAvatar.style.display = 'none';
+            }
+          } else {
+            suggestionAvatar.style.display = 'none';
+          }
+
+          suggestion.style.display = 'flex';
+        } catch (_) {
+          suggestion.style.display = 'none';
+        }
+      }
     </script>
   </body>
 </html>

@@ -107,12 +107,23 @@ func splitScopes(ctx context.Context, cli *http.Client, scopes []string) []scope
 		seen[key] = true
 
 		if info.IsPermSet {
-			def, err := fetchPermSetLexicon(ctx, cli, scope)
+			// Resolve the NSID: strip "include:" prefix if present
+			nsid := scope
+			if strings.HasPrefix(nsid, "include:") {
+				nsid = strings.TrimPrefix(nsid, "include:")
+				if idx := strings.Index(nsid, "?"); idx != -1 {
+					nsid = nsid[:idx]
+				}
+				// Update Name to be the NSID itself (before title is resolved)
+				info.Name = nsid
+			}
+
+			def, err := fetchPermSetLexicon(ctx, cli, nsid)
 			if err != nil {
 				info.FetchFailed = true
 			} else {
 				info.Name = def.Title
-				info.PermNSID = scope
+				info.PermNSID = nsid
 				info.PermDetail = def.Detail
 				for _, perm := range def.Permissions {
 					info.PermGroups = append(info.PermGroups, PermGroupDisplay{

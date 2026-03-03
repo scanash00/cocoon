@@ -228,9 +228,9 @@ func parseScopeForDisplay(scope string) scopeInfo {
 			setName = setName[:idx]
 		}
 		return scopeInfo{
-			Name:        setName,
-			Description: "Permission set",
-			Icon:        "package",
+			Name:      setName,
+			Icon:      "package",
+			IsPermSet: true,
 		}
 	}
 
